@@ -60,3 +60,9 @@ instance/
 
 # Generated HTML reports
 devmatch_results.html
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+devmatch_backup_*.db
