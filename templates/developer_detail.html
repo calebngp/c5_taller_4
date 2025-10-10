@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}{{ developer.name }} - Developer Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('developers') }}">Developers</a></li>
+                <li class="breadcrumb-item active">{{ developer.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header text-center" style="background: linear-gradient(45deg, #3498db, #2980b9); color: white;">
+                <div class="mb-3">
+                    <i class="fas fa-user-circle fa-4x"></i>
+                </div>
+                <h3>{{ developer.name }}</h3>
+                <p class="mb-0">{{ developer.experience_level }} Level Developer</p>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5><i class="fas fa-heart text-danger"></i> Motivation & Goals</h5>
+                    <p class="lead">{{ developer.motivation }}</p>
+                </div>
+                
+                <div class="mb-4">
+                    <h5><i class="fas fa-tools text-success"></i> Technical Skills</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for skill in developer.skills %}
+                        <span class="badge bg-success fs-6 p-2">
+                            <i class="fas fa-code"></i> {{ skill }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h5><i class="fas fa-briefcase text-warning"></i> Professional Experience</h5>
+                    <div class="row">
+                        {% for experience in developer.experiences %}
+                        <div class="col-12 mb-3">
+                            <div class="card bg-light border-start border-4 border-info">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start">
+                                        <i class="fas fa-check-circle text-success me-3 mt-1"></i>
+                                        <p class="mb-0">{{ experience }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-user"></i> Developer Summary</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Name:</strong> {{ developer.name }}
+                </div>
+                <div class="mb-3">
+                    <strong>Experience Level:</strong> 
+                    <span class="badge bg-primary">{{ developer.experience_level }}</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Skills Count:</strong> {{ developer.skills|length }}
+                </div>
+                <div>
+                    <strong>Experiences:</strong> {{ developer.experiences|length }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6><i class="fas fa-chart-pie"></i> Skill Categories</h6>
+            </div>
+            <div class="card-body">
+                {% set backend_skills = ['Java', 'Spring Boot', 'Python', 'Django', 'PostgreSQL'] %}
+                {% set frontend_skills = ['HTML', 'CSS', 'JavaScript', 'React', 'UI/UX'] %}
+                {% set mobile_skills = ['Kotlin', 'Firebase'] %}
+                {% set api_skills = ['Stripe API'] %}
+                
+                {% set developer_backend = developer.skills | select('in', backend_skills) | list %}
+                {% set developer_frontend = developer.skills | select('in', frontend_skills) | list %}
+                {% set developer_mobile = developer.skills | select('in', mobile_skills) | list %}
+                {% set developer_api = developer.skills | select('in', api_skills) | list %}
+                
+                {% if developer_backend %}
+                <div class="mb-2">
+                    <strong>Backend:</strong>
+                    {% for skill in developer_backend %}
+                    <span class="badge bg-primary">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% if developer_frontend %}
+                <div class="mb-2">
+                    <strong>Frontend:</strong>
+                    {% for skill in developer_frontend %}
+                    <span class="badge bg-success">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% if developer_mobile %}
+                <div class="mb-2">
+                    <strong>Mobile:</strong>
+                    {% for skill in developer_mobile %}
+                    <span class="badge bg-warning">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% if developer_api %}
+                <div class="mb-2">
+                    <strong>APIs:</strong>
+                    {% for skill in developer_api %}
+                    <span class="badge bg-info">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6><i class="fas fa-search"></i> Actions</h6>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('matching') }}" 
+                   class="btn btn-custom btn-lg w-100 mb-3">
+                    <i class="fas fa-project-diagram"></i> Find Suitable Projects
+                </a>
+                
+                <a href="{{ url_for('developers') }}" 
+                   class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-arrow-left"></i> Back to Developers
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Compatibility Section -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-project-diagram"></i> Project Compatibility Analysis</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Here's how {{ developer.name }} would match with our available projects:</p>
+                
+                <div class="row">
+                    {% for project in projects %}
+                    {% set technical_match = calculate_match(project, developer) %}
+                    {% set match_class = 'success' if technical_match >= 70 else 'info' if technical_match >= 50 else 'warning' if technical_match >= 30 else 'danger' %}
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-{{ match_class }}">
+                            <div class="card-header bg-{{ match_class }} text-white">
+                                <h6 class="mb-0">{{ project.name }}</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="text-center mb-3">
+                                    <div class="fw-bold fs-4 text-{{ match_class }}">{{ "%.0f"|format(technical_match) }}%</div>
+                                    <small class="text-muted">Technical Match</small>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <strong>Required:</strong>
+                                    {% for tech in project.required_technologies %}
+                                    {% if tech in developer.skills %}
+                                    <span class="badge bg-success">{{ tech }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ tech }}</span>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="text-center">
+                                    <a href="{{ url_for('project_detail', project_id=project.id) }}" 
+                                       class="btn btn-outline-{{ match_class }} btn-sm">
+                                        View Project
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

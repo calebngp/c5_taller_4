@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Developers - DevMatch AI{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-users text-primary"></i> Developer Profiles</h2>
+            <span class="badge bg-primary fs-6">{{ developers|length }} Developers</span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% for developer in developers %}
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header text-center" style="background: linear-gradient(45deg, #3498db, #2980b9); color: white;">
+                <div class="mb-2">
+                    <i class="fas fa-user-circle fa-3x"></i>
+                </div>
+                <h5 class="mb-1">{{ developer.name }}</h5>
+                <small>{{ developer.experience_level }} Level Developer</small>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6><i class="fas fa-tools text-success"></i> Skills:</h6>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for skill in developer.skills %}
+                        <span class="badge bg-success">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-heart text-danger"></i> Motivation:</h6>
+                    <p class="small text-muted">{{ developer.motivation }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-briefcase text-warning"></i> Key Experiences:</h6>
+                    <div class="small">
+                        {% for experience in developer.experiences[:2] %}
+                        <div class="mb-2 p-2 bg-light rounded">
+                            <i class="fas fa-check-circle text-success"></i>
+                            {{ experience[:80] }}{% if experience|length > 80 %}...{% endif %}
+                        </div>
+                        {% endfor %}
+                        {% if developer.experiences|length > 2 %}
+                        <div class="text-center">
+                            <small class="text-muted">
+                                <i class="fas fa-plus"></i> {{ developer.experiences|length - 2 }} more experiences
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <div class="text-center">
+                    <a href="{{ url_for('developer_detail', developer_id=developer.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-eye"></i> View Full Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie"></i> Developer Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <div class="metric-value text-primary">{{ developers|length }}</div>
+                            <div class="text-muted">Total Developers</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <div class="metric-value text-success">
+                                {{ developers|selectattr("experience_level", "equalto", "Intermediate")|list|length }}
+                            </div>
+                            <div class="text-muted">Intermediate</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <div class="metric-value text-warning">
+                                {{ developers|selectattr("experience_level", "equalto", "Advanced")|list|length }}
+                            </div>
+                            <div class="text-muted">Advanced</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <div class="metric-value text-info">
+                                {% set all_skills = [] %}
+                                {% for dev in developers %}
+                                    {% for skill in dev.skills %}
+                                        {% if all_skills.append(skill) %}{% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {{ all_skills|unique|list|length }}
+                            </div>
+                            <div class="text-muted">Unique Skills</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-tags"></i> Most Common Skills</h6>
+            </div>
+            <div class="card-body">
+                {% set skill_count = {} %}
+                {% for dev in developers %}
+                    {% for skill in dev.skills %}
+                        {% if skill_count.update({skill: skill_count.get(skill, 0) + 1}) %}{% endif %}
+                    {% endfor %}
+                {% endfor %}
+                
+                <div class="d-flex flex-wrap gap-2">
+                    {% for skill, count in skill_count.items() %}
+                    <span class="badge bg-primary fs-6">
+                        {{ skill }} 
+                        <span class="badge bg-light text-dark ms-1">{{ count }}</span>
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <a href="{{ url_for('matching') }}" class="btn btn-custom btn-lg">
+            <i class="fas fa-search"></i> Find Best Project Matches
+        </a>
+    </div>
+</div>
+{% endblock %}

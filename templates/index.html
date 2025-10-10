@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}DevMatch AI - Home{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Hero Section -->
+        <div class="card text-center mb-5" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+            <div class="card-body py-5">
+                <h1 class="display-4 mb-4">
+                    <i class="fas fa-robot"></i> DevMatch AI
+                </h1>
+                <p class="lead mb-4">Intelligent Project-Developer Matching System</p>
+                <p class="fs-5">Using advanced AI to find the perfect match between developers and projects based on skills, motivation, and relevant experiences.</p>
+                <a href="{{ url_for('matching') }}" class="btn btn-light btn-lg mt-3">
+                    <i class="fas fa-search"></i> Start Matching
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Features Section -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-brain fa-3x text-primary"></i>
+                </div>
+                <h5 class="card-title">AI-Powered Analysis</h5>
+                <p class="card-text">
+                    Uses DeepSeek AI to analyze technical skills, motivational alignment, and experience relevance for accurate matching.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-chart-line fa-3x text-success"></i>
+                </div>
+                <h5 class="card-title">Comprehensive Scoring</h5>
+                <p class="card-text">
+                    Evaluates multiple dimensions: technical match, AI technical affinity, motivational alignment, and experience relevance.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-lightbulb fa-3x text-warning"></i>
+                </div>
+                <h5 class="card-title">Experience Integration</h5>
+                <p class="card-text">
+                    Considers relevant past experiences that might enhance project understanding, even if not directly technical.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-info-circle"></i> How It Works</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                            <span class="fs-4 fw-bold">1</span>
+                        </div>
+                        <h6 class="mt-2">Select Project</h6>
+                        <p class="small">Choose a project from our database</p>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                            <span class="fs-4 fw-bold">2</span>
+                        </div>
+                        <h6 class="mt-2">AI Analysis</h6>
+                        <p class="small">DeepSeek AI analyzes developer profiles</p>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                            <span class="fs-4 fw-bold">3</span>
+                        </div>
+                        <h6 class="mt-2">Score Calculation</h6>
+                        <p class="small">Multiple metrics are calculated and weighted</p>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                            <span class="fs-4 fw-bold">4</span>
+                        </div>
+                        <h6 class="mt-2">Best Matches</h6>
+                        <p class="small">Get ranked candidates with detailed insights</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-project-diagram text-danger"></i> Available Projects</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ projects|length }} active projects available for matching</p>
+                <ul class="list-unstyled">
+                    {% for project in projects[:3] %}
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success"></i>
+                        <strong>{{ project.name }}</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <a href="{{ url_for('projects') }}" class="btn btn-custom">
+                    <i class="fas fa-eye"></i> View All Projects
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-users text-primary"></i> Developer Pool</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ developers|length }} skilled developers in our database</p>
+                <ul class="list-unstyled">
+                    {% for dev in developers %}
+                    <li class="mb-2">
+                        <i class="fas fa-user text-primary"></i>
+                        <strong>{{ dev.name }}</strong> - {{ dev.experience_level }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                <a href="{{ url_for('developers') }}" class="btn btn-custom">
+                    <i class="fas fa-eye"></i> View All Developers
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

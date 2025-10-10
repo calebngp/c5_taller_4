@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - Project Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('projects') }}">Projects</a></li>
+                <li class="breadcrumb-item active">{{ project.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header" style="background: linear-gradient(45deg, #e74c3c, #c0392b); color: white;">
+                <h3><i class="fas fa-rocket"></i> {{ project.name }}</h3>
+                <p class="mb-0">{{ project.project_type }} Project - {{ project.experience_level }} Level</p>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5><i class="fas fa-align-left"></i> Project Description</h5>
+                    <p class="lead">{{ project.description }}</p>
+                </div>
+                
+                <div class="mb-4">
+                    <h5><i class="fas fa-tools"></i> Required Technologies</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for tech in project.required_technologies %}
+                        <span class="badge bg-primary fs-6 p-2">
+                            <i class="fas fa-code"></i> {{ tech }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
+                                <h6>Experience Level</h6>
+                                <span class="badge bg-success fs-6">{{ project.experience_level }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <i class="fas fa-info-circle fa-2x text-info mb-2"></i>
+                                <h6>Project Status</h6>
+                                <span class="badge bg-success fs-6">{{ project.status }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Matching Results -->
+        {% if matches %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="fas fa-users"></i> Developer Matches for This Project</h5>
+            </div>
+            <div class="card-body">
+                {% for match in matches %}
+                {% set avg_score = ((match.technical_match + match.ai_analysis.technical_affinity + match.ai_analysis.motivational_affinity + match.ai_analysis.experience_relevance) / 4) %}
+                <div class="row align-items-center mb-3 p-3 border rounded">
+                    <div class="col-md-3">
+                        <h6><i class="fas fa-user-circle"></i> {{ match.developer.name }}</h6>
+                        <small class="text-muted">{{ match.developer.experience_level }} Level</small>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="fw-bold text-primary fs-4">{{ "%.0f"|format(avg_score) }}%</div>
+                            <small class="text-muted">Overall Match</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="small">
+                            <strong>Technical:</strong> {{ "%.0f"|format(match.technical_match) }}% |
+                            <strong>AI Technical:</strong> {{ match.ai_analysis.technical_affinity }}% |
+                            <strong>Motivation:</strong> {{ match.ai_analysis.motivational_affinity }}% |
+                            <strong>Experience:</strong> {{ match.ai_analysis.experience_relevance }}%
+                        </div>
+                        <div class="mt-2">
+                            <a href="{{ url_for('developer_detail', developer_id=match.developer.id) }}" 
+                               class="btn btn-sm btn-outline-primary">View Profile</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-search"></i> Actions</h6>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('matching', project_id=project.id) }}" 
+                   class="btn btn-custom btn-lg w-100 mb-3">
+                    <i class="fas fa-magic"></i> Find Best Candidates
+                </a>
+                
+                <a href="{{ url_for('projects') }}" 
+                   class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-arrow-left"></i> Back to Projects
+                </a>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6><i class="fas fa-info-circle"></i> Project Info</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Project ID:</strong> #{{ project.id }}
+                </div>
+                <div class="mb-3">
+                    <strong>Type:</strong> {{ project.project_type }}
+                </div>
+                <div class="mb-3">
+                    <strong>Technologies Needed:</strong> {{ project.required_technologies|length }}
+                </div>
+                <div>
+                    <strong>Status:</strong> 
+                    <span class="badge bg-success">{{ project.status }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
