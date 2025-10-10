@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if action == 'create' %}Nuevo Desarrollador{% else %}Editar Desarrollador{% endif %} - DevMatch AI
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-{% if action == 'create' %}user-plus{% else %}user-edit{% endif %} text-primary"></i>
+                {% if action == 'create' %}Nuevo Desarrollador{% else %}Editar Desarrollador{% endif %}
+            </h2>
+            <a href="{{ url_for('developers') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Volver a Desarrolladores
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{% if category == 'error' %}exclamation-triangle{% else %}check-circle{% endif %}"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+{% endwith %}
+
+<form method="POST" class="needs-validation" novalidate>
+    <div class="row">
+        <!-- Información Personal -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-user text-primary"></i> Información Personal</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nombre Completo *</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="name" 
+                               name="name" 
+                               value="{{ developer.name if developer else '' }}" 
+                               required>
+                        <div class="invalid-feedback">
+                            Por favor ingrese un nombre válido.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="experience_level" class="form-label">Nivel de Experiencia *</label>
+                        <select class="form-select" id="experience_level" name="experience_level" required>
+                            <option value="">Seleccionar nivel...</option>
+                            <option value="Beginner" {{ 'selected' if developer and developer.experience_level == 'Beginner' else '' }}>
+                                Principiante
+                            </option>
+                            <option value="Intermediate" {{ 'selected' if developer and developer.experience_level == 'Intermediate' else '' }}>
+                                Intermedio
+                            </option>
+                            <option value="Advanced" {{ 'selected' if developer and developer.experience_level == 'Advanced' else '' }}>
+                                Avanzado
+                            </option>
+                        </select>
+                        <div class="invalid-feedback">
+                            Por favor seleccione un nivel de experiencia.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" 
+                               class="form-control" 
+                               id="email" 
+                               name="email" 
+                               value="{{ developer.email if developer and developer.email else '' }}" 
+                               placeholder="ejemplo@email.com">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="linkedin" class="form-label">LinkedIn</label>
+                        <input type="url" 
+                               class="form-control" 
+                               id="linkedin" 
+                               name="linkedin" 
+                               value="{{ developer.linkedin if developer and developer.linkedin else '' }}" 
+                               placeholder="https://linkedin.com/in/usuario">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="github" class="form-label">GitHub</label>
+                        <input type="url" 
+                               class="form-control" 
+                               id="github" 
+                               name="github" 
+                               value="{{ developer.github if developer and developer.github else '' }}" 
+                               placeholder="https://github.com/usuario">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Habilidades y Motivación -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-tools text-success"></i> Habilidades Técnicas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tecnologías y Herramientas</label>
+                        <div class="skills-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;">
+                            {% set developer_skill_ids = developer.skills | map(attribute='id') | list if developer else [] %}
+                            {% for technology in technologies %}
+                            <div class="form-check">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       value="{{ technology.id }}" 
+                                       id="skill_{{ technology.id }}" 
+                                       name="skills"
+                                       {{ 'checked' if technology.id in developer_skill_ids else '' }}>
+                                <label class="form-check-label" for="skill_{{ technology.id }}">
+                                    {{ technology.name }}
+                                    {% if technology.category %}
+                                        <small class="text-muted">({{ technology.category }})</small>
+                                    {% endif %}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <small class="form-text text-muted">Seleccione todas las tecnologías que domina</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-heart text-danger"></i> Motivación</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="motivation" class="form-label">¿Qué lo motiva como desarrollador?</label>
+                        <textarea class="form-control" 
+                                  id="motivation" 
+                                  name="motivation" 
+                                  rows="4" 
+                                  placeholder="Describa qué lo apasiona en el desarrollo de software, sus objetivos profesionales, tipos de proyectos que le interesan...">{{ developer.motivation if developer and developer.motivation else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Experiencias -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-briefcase text-warning"></i> Experiencias</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="addExperience">
+                        <i class="fas fa-plus"></i> Agregar Experiencia
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="experiencesContainer">
+                        {% if developer and developer.experiences %}
+                            {% for experience in developer.experiences %}
+                            <div class="experience-item mb-3 p-3 border rounded">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <label class="form-label">Descripción</label>
+                                        <textarea class="form-control" 
+                                                  name="experience_description[]" 
+                                                  rows="2" 
+                                                  placeholder="Describa la experiencia, proyecto, trabajo o educación...">{{ experience.description }}</textarea>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Categoría</label>
+                                        <select class="form-select" name="experience_category[]">
+                                            <option value="project" {{ 'selected' if experience.category == 'project' else '' }}>Proyecto</option>
+                                            <option value="work" {{ 'selected' if experience.category == 'work' else '' }}>Trabajo</option>
+                                            <option value="education" {{ 'selected' if experience.category == 'education' else '' }}>Educación</option>
+                                            <option value="other" {{ 'selected' if experience.category == 'other' else '' }}>Otro</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button type="button" class="btn btn-outline-danger btn-sm remove-experience d-block">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                        <!-- Template por defecto -->
+                        <div class="experience-item mb-3 p-3 border rounded">
+                            <div class="row">
+                                <div class="col-md-9">
+                                    <label class="form-label">Descripción</label>
+                                    <textarea class="form-control" 
+                                              name="experience_description[]" 
+                                              rows="2" 
+                                              placeholder="Describa la experiencia, proyecto, trabajo o educación..."></textarea>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Categoría</label>
+                                    <select class="form-select" name="experience_category[]">
+                                        <option value="project">Proyecto</option>
+                                        <option value="work">Trabajo</option>
+                                        <option value="education">Educación</option>
+                                        <option value="other">Otro</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="button" class="btn btn-outline-danger btn-sm remove-experience d-block">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <small class="form-text text-muted">
+                        Agregue proyectos personales, experiencia laboral, educación u otras experiencias relevantes
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Botones de acción -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('developers') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    {% if action == 'create' %}Crear Desarrollador{% else %}Guardar Cambios{% endif %}
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Template para nuevas experiencias -->
+<template id="experienceTemplate">
+    <div class="experience-item mb-3 p-3 border rounded">
+        <div class="row">
+            <div class="col-md-9">
+                <label class="form-label">Descripción</label>
+                <textarea class="form-control" 
+                          name="experience_description[]" 
+                          rows="2" 
+                          placeholder="Describa la experiencia, proyecto, trabajo o educación..."></textarea>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Categoría</label>
+                <select class="form-select" name="experience_category[]">
+                    <option value="project">Proyecto</option>
+                    <option value="work">Trabajo</option>
+                    <option value="education">Educación</option>
+                    <option value="other">Otro</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-experience d-block">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Bootstrap form validation
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+    
+    // Add new experience
+    document.getElementById('addExperience').addEventListener('click', function() {
+        var template = document.getElementById('experienceTemplate');
+        var container = document.getElementById('experiencesContainer');
+        var newExperience = template.content.cloneNode(true);
+        container.appendChild(newExperience);
+    });
+    
+    // Remove experience (event delegation)
+    document.getElementById('experiencesContainer').addEventListener('click', function(e) {
+        if (e.target.closest('.remove-experience')) {
+            var experienceItem = e.target.closest('.experience-item');
+            var container = document.getElementById('experiencesContainer');
+            
+            // Don't allow removing the last experience item
+            if (container.children.length > 1) {
+                experienceItem.remove();
+            } else {
+                // Clear the content of the last item instead of removing it
+                var textarea = experienceItem.querySelector('textarea');
+                var select = experienceItem.querySelector('select');
+                if (textarea) textarea.value = '';
+                if (select) select.value = 'project';
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

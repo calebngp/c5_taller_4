@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if action == 'create' %}Nuevo Proyecto{% else %}Editar Proyecto{% endif %} - DevMatch AI
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-{% if action == 'create' %}plus-circle{% else %}edit{% endif %} text-primary"></i>
+                {% if action == 'create' %}Nuevo Proyecto{% else %}Editar Proyecto{% endif %}
+            </h2>
+            <a href="{{ url_for('projects') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Volver a Proyectos
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{% if category == 'error' %}exclamation-triangle{% else %}check-circle{% endif %}"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+{% endwith %}
+
+<form method="POST" class="needs-validation" novalidate>
+    <div class="row">
+        <!-- Información del Proyecto -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-project-diagram text-primary"></i> Información del Proyecto</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nombre del Proyecto *</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="name" 
+                               name="name" 
+                               value="{{ project.name if project else '' }}" 
+                               required
+                               placeholder="Ej: Sistema de Gestión de Inventario">
+                        <div class="invalid-feedback">
+                            Por favor ingrese un nombre válido para el proyecto.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descripción del Proyecto *</label>
+                        <textarea class="form-control" 
+                                  id="description" 
+                                  name="description" 
+                                  rows="5" 
+                                  required
+                                  placeholder="Describa detalladamente el proyecto, sus objetivos, funcionalidades principales, y requisitos específicos...">{{ project.description if project else '' }}</textarea>
+                        <div class="invalid-feedback">
+                            Por favor proporcione una descripción del proyecto.
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="experience_level" class="form-label">Nivel de Experiencia Requerido *</label>
+                                <select class="form-select" id="experience_level" name="experience_level" required>
+                                    <option value="">Seleccionar nivel...</option>
+                                    <option value="Beginner" {{ 'selected' if project and project.experience_level == 'Beginner' else '' }}>
+                                        Principiante
+                                    </option>
+                                    <option value="Intermediate" {{ 'selected' if project and project.experience_level == 'Intermediate' else '' }}>
+                                        Intermedio
+                                    </option>
+                                    <option value="Advanced" {{ 'selected' if project and project.experience_level == 'Advanced' else '' }}>
+                                        Avanzado
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Por favor seleccione un nivel de experiencia.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="project_type" class="form-label">Tipo de Proyecto *</label>
+                                <select class="form-select" id="project_type" name="project_type" required>
+                                    <option value="">Seleccionar tipo...</option>
+                                    <option value="Web" {{ 'selected' if project and project.project_type == 'Web' else '' }}>
+                                        Aplicación Web
+                                    </option>
+                                    <option value="Mobile" {{ 'selected' if project and project.project_type == 'Mobile' else '' }}>
+                                        Aplicación Móvil
+                                    </option>
+                                    <option value="Desktop" {{ 'selected' if project and project.project_type == 'Desktop' else '' }}>
+                                        Aplicación de Escritorio
+                                    </option>
+                                    <option value="API" {{ 'selected' if project and project.project_type == 'API' else '' }}>
+                                        API/Servicio Web
+                                    </option>
+                                    <option value="Data Science" {{ 'selected' if project and project.project_type == 'Data Science' else '' }}>
+                                        Ciencia de Datos
+                                    </option>
+                                    <option value="DevOps" {{ 'selected' if project and project.project_type == 'DevOps' else '' }}>
+                                        DevOps/Infraestructura
+                                    </option>
+                                    <option value="Other" {{ 'selected' if project and project.project_type == 'Other' else '' }}>
+                                        Otro
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Por favor seleccione un tipo de proyecto.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Estado del Proyecto</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="Open" {{ 'selected' if not project or project.status == 'Open' else '' }}>
+                                        Abierto
+                                    </option>
+                                    <option value="In Progress" {{ 'selected' if project and project.status == 'In Progress' else '' }}>
+                                        En Progreso
+                                    </option>
+                                    <option value="On Hold" {{ 'selected' if project and project.status == 'On Hold' else '' }}>
+                                        En Pausa
+                                    </option>
+                                    <option value="Completed" {{ 'selected' if project and project.status == 'Completed' else '' }}>
+                                        Completado
+                                    </option>
+                                    <option value="Cancelled" {{ 'selected' if project and project.status == 'Cancelled' else '' }}>
+                                        Cancelado
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tecnologías Requeridas -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-cogs text-success"></i> Tecnologías Requeridas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Seleccione las tecnologías necesarias</label>
+                        <div class="technologies-container" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; padding: 15px; border-radius: 8px; background-color: #f8f9fa;">
+                            {% set project_tech_ids = project.required_technologies | map(attribute='id') | list if project else [] %}
+                            
+                            <!-- Agrupar tecnologías por categoría -->
+                            {% set tech_categories = {} %}
+                            {% for technology in technologies %}
+                                {% set category = technology.category or 'other' %}
+                                {% if tech_categories.update({category: tech_categories.get(category, []) + [technology]}) %}{% endif %}
+                            {% endfor %}
+                            
+                            {% for category, techs in tech_categories.items() %}
+                                {% if techs %}
+                                <div class="mb-3">
+                                    <h6 class="text-muted text-uppercase small mb-2">
+                                        <i class="fas fa-{% if category == 'frontend' %}paint-brush{% elif category == 'backend' %}server{% elif category == 'database' %}database{% elif category == 'mobile' %}mobile-alt{% else %}tools{% endif %}"></i>
+                                        {{ category.title() if category != 'other' else 'Otras' }}
+                                    </h6>
+                                    {% for technology in techs %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               value="{{ technology.id }}" 
+                                               id="tech_{{ technology.id }}" 
+                                               name="technologies"
+                                               {{ 'checked' if technology.id in project_tech_ids else '' }}>
+                                        <label class="form-check-label" for="tech_{{ technology.id }}">
+                                            {{ technology.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <small class="form-text text-muted">Seleccione todas las tecnologías que serán necesarias para el proyecto</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sección de Vista Previa -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4" id="previewCard" style="display: none;">
+                <div class="card-header">
+                    <h5><i class="fas fa-eye text-info"></i> Vista Previa del Proyecto</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h4 id="previewName" class="text-primary"></h4>
+                            <p id="previewDescription" class="text-muted"></p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <strong>Nivel:</strong> <span id="previewLevel" class="badge bg-primary"></span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Tipo:</strong> <span id="previewType" class="badge bg-info"></span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Estado:</strong> <span id="previewStatus" class="badge bg-success"></span>
+                            </div>
+                            <div>
+                                <strong>Tecnologías:</strong>
+                                <div id="previewTechnologies" class="mt-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Botones de acción -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('projects') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-info" id="previewBtn">
+                        <i class="fas fa-eye"></i> Vista Previa
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        {% if action == 'create' %}Crear Proyecto{% else %}Guardar Cambios{% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Bootstrap form validation
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+    
+    // Vista previa del proyecto
+    document.getElementById('previewBtn').addEventListener('click', function() {
+        updatePreview();
+        var previewCard = document.getElementById('previewCard');
+        if (previewCard.style.display === 'none') {
+            previewCard.style.display = 'block';
+            this.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar Vista Previa';
+            previewCard.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            previewCard.style.display = 'none';
+            this.innerHTML = '<i class="fas fa-eye"></i> Vista Previa';
+        }
+    });
+    
+    function updatePreview() {
+        // Obtener valores del formulario
+        var name = document.getElementById('name').value || 'Nombre del Proyecto';
+        var description = document.getElementById('description').value || 'Descripción del proyecto...';
+        var experienceLevel = document.getElementById('experience_level').value;
+        var projectType = document.getElementById('project_type').value;
+        var status = document.getElementById('status').value;
+        
+        // Obtener tecnologías seleccionadas
+        var selectedTechs = [];
+        var techCheckboxes = document.querySelectorAll('input[name="technologies"]:checked');
+        techCheckboxes.forEach(function(checkbox) {
+            var label = document.querySelector('label[for="' + checkbox.id + '"]');
+            selectedTechs.push(label.textContent.trim());
+        });
+        
+        // Actualizar vista previa
+        document.getElementById('previewName').textContent = name;
+        document.getElementById('previewDescription').textContent = description;
+        document.getElementById('previewLevel').textContent = getLevelText(experienceLevel);
+        document.getElementById('previewType').textContent = getTypeText(projectType);
+        document.getElementById('previewStatus').textContent = getStatusText(status);
+        
+        // Actualizar tecnologías
+        var techContainer = document.getElementById('previewTechnologies');
+        techContainer.innerHTML = '';
+        selectedTechs.forEach(function(tech) {
+            var badge = document.createElement('span');
+            badge.className = 'badge bg-success me-1 mb-1';
+            badge.textContent = tech;
+            techContainer.appendChild(badge);
+        });
+        
+        if (selectedTechs.length === 0) {
+            techContainer.innerHTML = '<small class="text-muted">Ninguna tecnología seleccionada</small>';
+        }
+    }
+    
+    function getLevelText(level) {
+        switch(level) {
+            case 'Beginner': return 'Principiante';
+            case 'Intermediate': return 'Intermedio';
+            case 'Advanced': return 'Avanzado';
+            default: return 'No especificado';
+        }
+    }
+    
+    function getTypeText(type) {
+        switch(type) {
+            case 'Web': return 'Aplicación Web';
+            case 'Mobile': return 'Aplicación Móvil';
+            case 'Desktop': return 'Aplicación de Escritorio';
+            case 'API': return 'API/Servicio Web';
+            case 'Data Science': return 'Ciencia de Datos';
+            case 'DevOps': return 'DevOps/Infraestructura';
+            case 'Other': return 'Otro';
+            default: return 'No especificado';
+        }
+    }
+    
+    function getStatusText(status) {
+        switch(status) {
+            case 'Open': return 'Abierto';
+            case 'In Progress': return 'En Progreso';
+            case 'On Hold': return 'En Pausa';
+            case 'Completed': return 'Completado';
+            case 'Cancelled': return 'Cancelado';
+            default: return 'Abierto';
+        }
+    }
+});
+</script>
+
+<style>
+.technologies-container .form-check {
+    margin-bottom: 8px;
+}
+
+.technologies-container h6 {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+#previewCard {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}

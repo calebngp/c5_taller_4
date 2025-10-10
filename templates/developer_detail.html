@@ -143,6 +143,16 @@
                 <h6><i class="fas fa-search"></i> Actions</h6>
             </div>
             <div class="card-body">
+                <a href="{{ url_for('edit_developer', developer_id=developer.id) }}" 
+                   class="btn btn-warning w-100 mb-2">
+                    <i class="fas fa-edit"></i> Editar Desarrollador
+                </a>
+                
+                <button type="button" class="btn btn-danger w-100 mb-3" 
+                        onclick="confirmDelete('{{ developer.name }}', {{ developer.id }})">
+                    <i class="fas fa-trash"></i> Eliminar Desarrollador
+                </button>
+                
                 <a href="{{ url_for('matching') }}" 
                    class="btn btn-custom btn-lg w-100 mb-3">
                     <i class="fas fa-project-diagram"></i> Find Suitable Projects
@@ -209,4 +219,38 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para confirmar eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar al desarrollador <strong id="developerName"></strong>?</p>
+                <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(developerName, developerId) {
+    document.getElementById('developerName').textContent = developerName;
+    document.getElementById('deleteForm').action = '/developers/' + developerId + '/delete';
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+</script>
+
 {% endblock %}

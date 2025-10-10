@@ -107,6 +107,16 @@
                 <h6><i class="fas fa-search"></i> Actions</h6>
             </div>
             <div class="card-body">
+                <a href="{{ url_for('edit_project', project_id=project.id) }}" 
+                   class="btn btn-warning w-100 mb-2">
+                    <i class="fas fa-edit"></i> Editar Proyecto
+                </a>
+                
+                <button type="button" class="btn btn-danger w-100 mb-3" 
+                        onclick="confirmDeleteProject('{{ project.name }}', {{ project.id }})">
+                    <i class="fas fa-trash"></i> Eliminar Proyecto
+                </button>
+                
                 <a href="{{ url_for('matching', project_id=project.id) }}" 
                    class="btn btn-custom btn-lg w-100 mb-3">
                     <i class="fas fa-magic"></i> Find Best Candidates
@@ -141,4 +151,38 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para confirmar eliminación -->
+<div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-labelledby="deleteProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteProjectModalLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar el proyecto <strong id="projectName"></strong>?</p>
+                <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Esta acción no se puede deshacer y eliminará toda la información asociada al proyecto.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteProjectForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Eliminar Proyecto
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDeleteProject(projectName, projectId) {
+    document.getElementById('projectName').textContent = projectName;
+    document.getElementById('deleteProjectForm').action = '/projects/' + projectId + '/delete';
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteProjectModal'));
+    deleteModal.show();
+}
+</script>
+
 {% endblock %}

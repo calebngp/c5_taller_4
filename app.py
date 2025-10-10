@@ -3,8 +3,8 @@
 # ============================================================
 
 import os
-from flask import Flask, render_template, request, jsonify, redirect, url_for
-from models import db
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from models import db, Developer, Technology, Experience, Project
 from database import (get_all_projects, get_all_developers, 
                      get_project_by_id, get_developer_by_id, calculate_match_db)
 from modelai3 import analyze_with_deepseek
@@ -48,11 +48,335 @@ def projects():
     projects_list = get_all_projects()
     return render_template('projects.html', projects=projects_list)
 
+@app.route('/projects/new', methods=['GET', 'POST'])
+def new_project():
+    """Create a new project"""
+    if request.method == 'POST':
+        try:
+            # Get form data
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+            experience_level = request.form.get('experience_level', '')
+            project_type = request.form.get('project_type', '')
+            status = request.form.get('status', 'Open')
+            
+            # Get selected technologies
+            selected_technologies = request.form.getlist('technologies')
+            
+            # Validation
+            if not name:
+                flash('El nombre del proyecto es requerido', 'error')
+                return redirect(url_for('new_project'))
+            
+            if not description:
+                flash('La descripción del proyecto es requerida', 'error')
+                return redirect(url_for('new_project'))
+            
+            if not experience_level:
+                flash('El nivel de experiencia es requerido', 'error')
+                return redirect(url_for('new_project'))
+            
+            if not project_type:
+                flash('El tipo de proyecto es requerido', 'error')
+                return redirect(url_for('new_project'))
+            
+            # Create new project
+            project = Project(
+                name=name,
+                description=description,
+                experience_level=experience_level,
+                project_type=project_type,
+                status=status
+            )
+            
+            # Add required technologies
+            for tech_id in selected_technologies:
+                technology = Technology.query.get(int(tech_id))
+                if technology:
+                    project.required_technologies.append(technology)
+            
+            db.session.add(project)
+            db.session.commit()
+            
+            flash(f'Proyecto {name} creado exitosamente!', 'success')
+            return redirect(url_for('project_detail', project_id=project.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear el proyecto: {str(e)}', 'error')
+            return redirect(url_for('new_project'))
+    
+    # GET request - show form
+    technologies = Technology.query.order_by(Technology.name).all()
+    return render_template('project_form.html', 
+                         project=None, 
+                         technologies=technologies,
+                         action='create')
+
+@app.route('/projects/<int:project_id>/edit', methods=['GET', 'POST'])
+def edit_project(project_id):
+    """Edit an existing project"""
+    project = Project.query.get_or_404(project_id)
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+            experience_level = request.form.get('experience_level', '')
+            project_type = request.form.get('project_type', '')
+            status = request.form.get('status', 'Open')
+            
+            # Get selected technologies
+            selected_technologies = request.form.getlist('technologies')
+            
+            # Validation
+            if not name:
+                flash('El nombre del proyecto es requerido', 'error')
+                return redirect(url_for('edit_project', project_id=project_id))
+            
+            if not description:
+                flash('La descripción del proyecto es requerida', 'error')
+                return redirect(url_for('edit_project', project_id=project_id))
+            
+            if not experience_level:
+                flash('El nivel de experiencia es requerido', 'error')
+                return redirect(url_for('edit_project', project_id=project_id))
+            
+            if not project_type:
+                flash('El tipo de proyecto es requerido', 'error')
+                return redirect(url_for('edit_project', project_id=project_id))
+            
+            # Update project data
+            project.name = name
+            project.description = description
+            project.experience_level = experience_level
+            project.project_type = project_type
+            project.status = status
+            
+            # Update technologies - clear and re-add
+            project.required_technologies.clear()
+            for tech_id in selected_technologies:
+                technology = Technology.query.get(int(tech_id))
+                if technology:
+                    project.required_technologies.append(technology)
+            
+            db.session.commit()
+            
+            flash(f'Proyecto {name} actualizado exitosamente!', 'success')
+            return redirect(url_for('project_detail', project_id=project.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar el proyecto: {str(e)}', 'error')
+            return redirect(url_for('edit_project', project_id=project_id))
+    
+    # GET request - show form with current data
+    technologies = Technology.query.order_by(Technology.name).all()
+    return render_template('project_form.html', 
+                         project=project, 
+                         technologies=technologies,
+                         action='edit')
+
+@app.route('/projects/<int:project_id>/delete', methods=['POST'])
+def delete_project(project_id):
+    """Delete a project"""
+    project = Project.query.get_or_404(project_id)
+    
+    try:
+        project_name = project.name
+        db.session.delete(project)
+        db.session.commit()
+        flash(f'Proyecto {project_name} eliminado exitosamente!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar el proyecto: {str(e)}', 'error')
+    
+    return redirect(url_for('projects'))
+
 @app.route('/developers')
 def developers():
     """Developers listing page"""
     developers_list = get_all_developers()
     return render_template('developers.html', developers=developers_list)
+
+@app.route('/developers/new', methods=['GET', 'POST'])
+def new_developer():
+    """Create a new developer"""
+    if request.method == 'POST':
+        try:
+            # Get form data
+            name = request.form.get('name', '').strip()
+            experience_level = request.form.get('experience_level', '')
+            motivation = request.form.get('motivation', '').strip()
+            email = request.form.get('email', '').strip()
+            linkedin = request.form.get('linkedin', '').strip()
+            github = request.form.get('github', '').strip()
+            
+            # Get selected skills
+            selected_skills = request.form.getlist('skills')
+            
+            # Get experiences (from dynamic form)
+            experiences_data = []
+            exp_descriptions = request.form.getlist('experience_description[]')
+            exp_categories = request.form.getlist('experience_category[]')
+            
+            for i in range(len(exp_descriptions)):
+                if exp_descriptions[i].strip():
+                    experiences_data.append({
+                        'description': exp_descriptions[i].strip(),
+                        'category': exp_categories[i] if i < len(exp_categories) else 'project'
+                    })
+            
+            # Validation
+            if not name:
+                flash('El nombre es requerido', 'error')
+                return redirect(url_for('new_developer'))
+            
+            if not experience_level:
+                flash('El nivel de experiencia es requerido', 'error')
+                return redirect(url_for('new_developer'))
+            
+            # Create new developer
+            developer = Developer(
+                name=name,
+                experience_level=experience_level,
+                motivation=motivation,
+                email=email if email else None,
+                linkedin=linkedin if linkedin else None,
+                github=github if github else None
+            )
+            
+            # Add skills
+            for skill_id in selected_skills:
+                skill = Technology.query.get(int(skill_id))
+                if skill:
+                    developer.skills.append(skill)
+            
+            # Save developer first
+            db.session.add(developer)
+            db.session.flush()  # Get the ID
+            
+            # Add experiences
+            for exp_data in experiences_data:
+                experience = Experience(
+                    developer_id=developer.id,
+                    description=exp_data['description'],
+                    category=exp_data['category']
+                )
+                db.session.add(experience)
+            
+            db.session.commit()
+            flash(f'Desarrollador {name} creado exitosamente!', 'success')
+            return redirect(url_for('developer_detail', developer_id=developer.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear el desarrollador: {str(e)}', 'error')
+            return redirect(url_for('new_developer'))
+    
+    # GET request - show form
+    technologies = Technology.query.order_by(Technology.name).all()
+    return render_template('developer_form.html', 
+                         developer=None, 
+                         technologies=technologies,
+                         action='create')
+
+@app.route('/developers/<int:developer_id>/edit', methods=['GET', 'POST'])
+def edit_developer(developer_id):
+    """Edit an existing developer"""
+    developer = Developer.query.get_or_404(developer_id)
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            name = request.form.get('name', '').strip()
+            experience_level = request.form.get('experience_level', '')
+            motivation = request.form.get('motivation', '').strip()
+            email = request.form.get('email', '').strip()
+            linkedin = request.form.get('linkedin', '').strip()
+            github = request.form.get('github', '').strip()
+            
+            # Get selected skills
+            selected_skills = request.form.getlist('skills')
+            
+            # Get experiences
+            experiences_data = []
+            exp_descriptions = request.form.getlist('experience_description[]')
+            exp_categories = request.form.getlist('experience_category[]')
+            
+            for i in range(len(exp_descriptions)):
+                if exp_descriptions[i].strip():
+                    experiences_data.append({
+                        'description': exp_descriptions[i].strip(),
+                        'category': exp_categories[i] if i < len(exp_categories) else 'project'
+                    })
+            
+            # Validation
+            if not name:
+                flash('El nombre es requerido', 'error')
+                return redirect(url_for('edit_developer', developer_id=developer_id))
+            
+            if not experience_level:
+                flash('El nivel de experiencia es requerido', 'error')
+                return redirect(url_for('edit_developer', developer_id=developer_id))
+            
+            # Update developer data
+            developer.name = name
+            developer.experience_level = experience_level
+            developer.motivation = motivation
+            developer.email = email if email else None
+            developer.linkedin = linkedin if linkedin else None
+            developer.github = github if github else None
+            
+            # Update skills - clear and re-add
+            developer.skills.clear()
+            for skill_id in selected_skills:
+                skill = Technology.query.get(int(skill_id))
+                if skill:
+                    developer.skills.append(skill)
+            
+            # Update experiences - clear and re-add
+            Experience.query.filter_by(developer_id=developer.id).delete()
+            for exp_data in experiences_data:
+                experience = Experience(
+                    developer_id=developer.id,
+                    description=exp_data['description'],
+                    category=exp_data['category']
+                )
+                db.session.add(experience)
+            
+            db.session.commit()
+            flash(f'Desarrollador {name} actualizado exitosamente!', 'success')
+            return redirect(url_for('developer_detail', developer_id=developer.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar el desarrollador: {str(e)}', 'error')
+            return redirect(url_for('edit_developer', developer_id=developer_id))
+    
+    # GET request - show form with current data
+    technologies = Technology.query.order_by(Technology.name).all()
+    return render_template('developer_form.html', 
+                         developer=developer, 
+                         technologies=technologies,
+                         action='edit')
+
+@app.route('/developers/<int:developer_id>/delete', methods=['POST'])
+def delete_developer(developer_id):
+    """Delete a developer"""
+    developer = Developer.query.get_or_404(developer_id)
+    
+    try:
+        developer_name = developer.name
+        db.session.delete(developer)
+        db.session.commit()
+        flash(f'Desarrollador {developer_name} eliminado exitosamente!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar el desarrollador: {str(e)}', 'error')
+    
+    return redirect(url_for('developers'))
 
 @app.route('/matching')
 def matching():

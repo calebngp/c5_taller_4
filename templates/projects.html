@@ -7,7 +7,12 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fas fa-project-diagram text-danger"></i> Available Projects</h2>
-            <span class="badge bg-primary fs-6">{{ projects|length }} Projects</span>
+            <div class="d-flex gap-2 align-items-center">
+                <span class="badge bg-primary fs-6">{{ projects|length }} Projects</span>
+                <a href="{{ url_for('new_project') }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Nuevo Proyecto
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -42,13 +47,22 @@
                 </div>
             </div>
             <div class="card-footer bg-transparent">
-                <div class="d-flex justify-content-between">
-                    <a href="{{ url_for('project_detail', project_id=project.id) }}" class="btn btn-outline-primary">
-                        <i class="fas fa-eye"></i> View Details
+                <div class="d-flex justify-content-between mb-2">
+                    <a href="{{ url_for('project_detail', project_id=project.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye"></i> Ver Detalles
                     </a>
-                    <a href="{{ url_for('matching', project_id=project.id) }}" class="btn btn-custom">
-                        <i class="fas fa-search"></i> Find Candidates
+                    <a href="{{ url_for('matching', project_id=project.id) }}" class="btn btn-custom btn-sm">
+                        <i class="fas fa-search"></i> Buscar Candidatos
                     </a>
+                </div>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{{ url_for('edit_project', project_id=project.id) }}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-edit"></i> Editar
+                    </a>
+                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                            onclick="confirmDeleteProject('{{ project.name }}', {{ project.id }})">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
                 </div>
             </div>
         </div>
@@ -107,4 +121,38 @@
         </a>
     </div>
 </div>
+
+<!-- Modal para confirmar eliminación -->
+<div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-labelledby="deleteProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteProjectModalLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar el proyecto <strong id="projectName"></strong>?</p>
+                <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Esta acción no se puede deshacer y eliminará toda la información asociada al proyecto.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteProjectForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Eliminar Proyecto
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDeleteProject(projectName, projectId) {
+    document.getElementById('projectName').textContent = projectName;
+    document.getElementById('deleteProjectForm').action = '/projects/' + projectId + '/delete';
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteProjectModal'));
+    deleteModal.show();
+}
+</script>
+
 {% endblock %}
