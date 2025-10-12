@@ -66,3 +66,19 @@ devmatch_results.html
 *.sqlite
 *.sqlite3
 devmatch_backup_*.db
+
+# Maven/Java
+target/
+dependency-reduced-pom.xml
+*.class
+*.jar
+!src/
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db

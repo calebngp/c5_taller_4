@@ -1,21 +1,43 @@
 # DevMatch AI - Project-Developer Matching System
 
 ## Overview
-DevMatch AI is an intelligent matching system that uses DeepSeek AI to analyze the compatibility between developers and projects. It considers technical skills, motivational alignment, and relevant experiences to provide comprehensive matching scores.
+DevMatch AI is an intelligent matching system that uses DeepSeek AI to analyze the compatibility between developers and projects. It includes a **Java 21 Server Launcher** that manages the Python Flask backend with modern features and robust process management.
 
 ## Features
-- ✅ Technical skill matching
+- ✅ **Java 21 Server Launcher** - Modern process management with logging
 - 🧠 AI-powered semantic analysis with DeepSeek
-- 📊 Experience relevance evaluation
+- 📊 Experience relevance evaluation  
 - 💻 HTML report generation
-- 🌐 Flask web interface
+- 🌐 Flask web interface with interactive menu
 - 📱 Responsive design
 - 🎯 Individual project views
+- 🔄 Server restart and monitoring capabilities
+
+## 🚀 Quick Start
+
+### Method 1: Maven (Recommended)
+```bash
+cd /path/to/project
+mvn clean compile exec:java
+```
+
+### Method 2: Executable JAR
+```bash
+mvn clean package
+java -jar target/devmatch-launcher-java21.jar
+```
+
+### Method 3: Helper Script
+```bash
+./comandos.sh run
+```
 
 ## Installation & Setup
 
 ### Prerequisites
-- Python 3.7+
+- **Java 21 LTS** (Amazon Corretto recommended)
+- **Apache Maven 3.9+**
+- **Python 3.7+** with virtual environment
 - Ollama with DeepSeek model installed
 
 ### Install Ollama and DeepSeek
