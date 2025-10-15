@@ -1,1 +1,5 @@
+# First, compile the project
+mvn clean compile
+
+# Then execute the Java class
 mvn exec:java
