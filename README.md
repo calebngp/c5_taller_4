@@ -78,9 +78,9 @@ python flask_server.py
 ```
 
 Then visit:
-- **Main Interface**: http://localhost:5000
-- **API Endpoint**: http://localhost:5000/api/results
-- **Individual Projects**: http://localhost:5000/project/1, /project/2, /project/3
+- **Main Interface**: http://localhost:3000
+- **API Endpoint**: http://localhost:3000/api/results
+- **Individual Projects**: http://localhost:3000/project/1, /project/2, /project/3
 
 ## Features Breakdown
 
@@ -184,8 +184,8 @@ developers = [
 
 ### Flask Server Issues
 - Install Flask: `pip install flask`
-- Check if port 5000 is available
-- Try running on different port: modify the `port=5000` parameter
+- Check if port 3000 is available
+- Try running on different port: modify the `port=3000` parameter
 
 ### HTML Report Not Generating
 - Check file permissions in the current directory

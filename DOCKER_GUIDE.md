@@ -95,11 +95,11 @@ docker-compose build
 
 ### Puerto ya en uso:
 ```bash
-# Ver qué está usando el puerto 5000
-sudo lsof -i :5000
+# Ver qué está usando el puerto 3000
+sudo lsof -i :3000
 
 # Matar proceso en puerto específico
-kill -9 $(lsof -t -i:5000)
+kill -9 $(lsof -t -i:3000)
 ```
 
 ### Limpiar Docker:

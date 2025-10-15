@@ -196,7 +196,7 @@ if __name__ == "__main__":
         print("      - Database: devmatch_ai")
         print(f"      - Username: {os.getenv('DB_USER', 'calebnehemias')}")
         print("      - Password: (leave empty if no password)")
-        print("\n🌐 Web interface will be available at: http://localhost:5001")
+        print("\n🌐 Web interface will be available at: http://localhost:3000")
     else:
         print("\n❌ Migration failed!")
         print("Please check the error messages above.")

@@ -30,7 +30,7 @@ public class PythonServerLauncher {
     private static final Logger logger = LoggerFactory.getLogger(PythonServerLauncher.class);
     
     private static final String PYTHON_SCRIPT = "app.py";
-    private static final String SERVER_URL = "http://localhost:5001";
+    private static final String SERVER_URL = "http://localhost:3000";
     private static final int MAX_STARTUP_WAIT = 30; // segundos
     private static final String VENV_PYTHON = ".venv/bin/python";
     

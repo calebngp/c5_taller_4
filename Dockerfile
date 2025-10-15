@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Exponer el puerto que usa Flask
-EXPOSE 5000
+EXPOSE 3000
 
 # Variables de entorno por defecto
 ENV FLASK_APP=app.py

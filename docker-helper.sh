@@ -28,7 +28,7 @@ case $1 in
         echo "🚀 Iniciando servicios..."
         docker-compose up -d
         echo "✅ Servicios iniciados!"
-        echo "🌐 Aplicación web: http://localhost:5000"
+        echo "🌐 Aplicación web: http://localhost:3000"
         echo "🗄️  Adminer (DB): http://localhost:8080"
         ;;
     "stop")

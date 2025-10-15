@@ -489,21 +489,21 @@ def api_results():
 
 if __name__ == '__main__':
     print("🚀 Starting DevMatch AI Flask Server...")
-    print("📱 Access the web interface at: http://localhost:5001")
+    print("📱 Access the web interface at: http://localhost:3000")
     print("📊 Available pages:")
-    print("   🏠 Homepage: http://localhost:5001")
-    print("   🗂️  Projects: http://localhost:5000/projects")
-    print("   👥 Developers: http://localhost:5000/developers")
-    print("   🔍 Find Match: http://localhost:5000/matching")
-    print("   📊 API: http://localhost:5000/api/results")
+    print("   🏠 Homepage: http://localhost:3000")
+    print("   🗂️  Projects: http://localhost:3000/projects")
+    print("   👥 Developers: http://localhost:3000/developers")
+    print("   🔍 Find Match: http://localhost:3000/matching")
+    print("   📊 API: http://localhost:3000/api/results")
     print("\n✨ Features:")
     print("   - AI-powered matching with DeepSeek")
     print("   - Interactive project-developer matching")
     print("   - Detailed profiles and compatibility analysis")
     print("   - Responsive web design")
     
-    # Usar puerto 5000 para Docker y detectar si estamos en producción
-    port = int(os.getenv('PORT', 5000))
+    # Usar puerto 3000 para Docker y detectar si estamos en producción
+    port = int(os.getenv('PORT', 3000))
     debug_mode = os.getenv('FLASK_ENV', 'production') == 'development'
     
     app.run(debug=debug_mode, host='0.0.0.0', port=port)
