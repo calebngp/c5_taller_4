@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: devmatch_ai
+      POSTGRES_USER: calebnehemias
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calebnehemias -d devmatch_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Aplicación Flask
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=devmatch_ai
+      - DB_USER=calebnehemias
+      - DB_PASSWORD=password123
+      - FLASK_ENV=development
+    volumes:
+      # Montar el código para desarrollo (cambios en vivo)
+      - .:/app
+    command: python app.py
+
+  # Adminer (interfaz web para PostgreSQL) - Opcional
+  adminer:
+    image: adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
