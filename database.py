@@ -2,8 +2,8 @@
 # DevMatch AI - Database Initialization and Data Migration
 # ============================================================
 
-from models import db, Project, Developer, Technology, Experience
-from modelai3 import projects as old_projects, developers as old_developers
+from models import db, Project, Developer, Technology, Experience, MatchResult
+from initial_data import projects as old_projects, developers as old_developers
 from datetime import datetime
 import os
 
@@ -151,6 +151,117 @@ def calculate_match_db(project_dict, developer_dict):
     if not required:
         return 0
     return (len(matches) / len(required)) * 100
+
+def save_match_result(project_id, developer_id, technical_match, ai_analysis):
+    """Save match result to database"""
+    try:
+        # Check if a match result already exists for this project-developer pair
+        existing = MatchResult.query.filter_by(
+            project_id=project_id,
+            developer_id=developer_id
+        ).first()
+        
+        if existing:
+            # Update existing result
+            existing.technical_match = technical_match
+            existing.ai_technical_affinity = ai_analysis.get('technical_affinity', 0)
+            existing.ai_motivational_affinity = ai_analysis.get('motivational_affinity', 0)
+            existing.ai_experience_relevance = ai_analysis.get('experience_relevance', 0)
+            existing.ai_comment = ai_analysis.get('comment', '')
+            existing.created_at = datetime.now().isoformat()
+        else:
+            # Create new result
+            match_result = MatchResult(
+                project_id=project_id,
+                developer_id=developer_id,
+                technical_match=technical_match,
+                ai_technical_affinity=ai_analysis.get('technical_affinity', 0),
+                ai_motivational_affinity=ai_analysis.get('motivational_affinity', 0),
+                ai_experience_relevance=ai_analysis.get('experience_relevance', 0),
+                ai_comment=ai_analysis.get('comment', ''),
+                created_at=datetime.now().isoformat()
+            )
+            db.session.add(match_result)
+        
+        db.session.commit()
+        print(f"✅ Match result saved: Project {project_id} - Developer {developer_id}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error saving match result: {e}")
+        db.session.rollback()
+        return False
+
+def get_match_results():
+    """Get all match results from database"""
+    try:
+        results = MatchResult.query.all()
+        return [result.to_dict() for result in results]
+    except Exception as e:
+        print(f"❌ Error getting match results: {e}")
+        return []
+
+def get_match_results_for_project(project_id):
+    """Get match results for a specific project"""
+    try:
+        results = MatchResult.query.filter_by(project_id=project_id).all()
+        return [result.to_dict() for result in results]
+    except Exception as e:
+        print(f"❌ Error getting match results for project {project_id}: {e}")
+        return []
+
+def get_match_results_for_developer(developer_id):
+    """Get match results for a specific developer"""
+    try:
+        results = MatchResult.query.filter_by(developer_id=developer_id).all()
+        return [result.to_dict() for result in results]
+    except Exception as e:
+        print(f"❌ Error getting match results for developer {developer_id}: {e}")
+        return []
+
+def clear_old_match_results():
+    """Clear all match results (useful for regenerating results)"""
+    try:
+        MatchResult.query.delete()
+        db.session.commit()
+        print("✅ All match results cleared")
+        return True
+    except Exception as e:
+        print(f"❌ Error clearing match results: {e}")
+        db.session.rollback()
+        return False
+
+def get_match_statistics():
+    """Get statistics about saved matches"""
+    try:
+        total_matches = MatchResult.query.count()
+        
+        # Best technical matches
+        best_technical = MatchResult.query.order_by(MatchResult.technical_match.desc()).limit(3).all()
+        
+        # Best overall AI scores (average of AI metrics)
+        high_ai_scores = db.session.query(MatchResult).all()
+        
+        stats = {
+            'total_matches': total_matches,
+            'best_technical_matches': [
+                {
+                    'project_id': match.project_id,
+                    'developer_id': match.developer_id,
+                    'technical_match': match.technical_match,
+                    'project_name': match.project.name if match.project else 'Unknown',
+                    'developer_name': match.developer.name if match.developer else 'Unknown'
+                } for match in best_technical
+            ],
+            'average_technical_score': db.session.query(db.func.avg(MatchResult.technical_match)).scalar() or 0,
+            'average_ai_technical': db.session.query(db.func.avg(MatchResult.ai_technical_affinity)).scalar() or 0,
+            'average_ai_motivational': db.session.query(db.func.avg(MatchResult.ai_motivational_affinity)).scalar() or 0,
+        }
+        
+        return stats
+    except Exception as e:
+        print(f"❌ Error getting match statistics: {e}")
+        return None
 
 if __name__ == "__main__":
     from flask import Flask

@@ -1,0 +1,503 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - DevMatch AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analytics-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+        width: 100%;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .filter-controls {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }
+    
+    .score-bar {
+        height: 20px;
+        border-radius: 10px;
+        background: #e9ecef;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .score-fill {
+        height: 100%;
+        transition: width 0.5s ease;
+    }
+    
+    .score-excellent { background: linear-gradient(90deg, #28a745, #20c997); }
+    .score-good { background: linear-gradient(90deg, #17a2b8, #20c997); }
+    .score-fair { background: linear-gradient(90deg, #ffc107, #fd7e14); }
+    .score-poor { background: linear-gradient(90deg, #dc3545, #e74c3c); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-chart-bar text-primary"></i> Analytics Dashboard</h2>
+        <p class="text-muted">Visualize matching results and performance statistics</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-number">{{ projects|length }}</div>
+            <div class="stat-label">Total Projects</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-number">{{ developers|length }}</div>
+            <div class="stat-label">Total Developers</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-number">{{ all_matches|length }}</div>
+            <div class="stat-label">Total Matches</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            {% set avg_overall = (all_matches | sum(attribute='average_score')) / all_matches|length if all_matches else 0 %}
+            <div class="stat-number">{{ "%.1f"|format(avg_overall) }}%</div>
+            <div class="stat-label">Avg Match Score</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Controls -->
+<div class="filter-controls">
+    <div class="row align-items-end">
+        <div class="col-md-4">
+            <label for="projectFilter" class="form-label"><i class="fas fa-filter"></i> Filter by Project</label>
+            <select class="form-select" id="projectFilter">
+                <option value="">All Projects</option>
+                {% for project in projects %}
+                <option value="{{ project.id }}">{{ project.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="developerFilter" class="form-label"><i class="fas fa-user"></i> Filter by Developer</label>
+            <select class="form-select" id="developerFilter">
+                <option value="">All Developers</option>
+                {% for developer in developers %}
+                <option value="{{ developer.id }}">{{ developer.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button class="btn btn-custom" onclick="updateCharts()">
+                <i class="fas fa-sync-alt"></i> Update Charts
+            </button>
+            <button class="btn btn-outline-secondary" onclick="resetFilters()">
+                <i class="fas fa-times"></i> Reset
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row">
+    <!-- Match Distribution Chart -->
+    <div class="col-lg-6">
+        <div class="analytics-card">
+            <div class="card-header">
+                <h5><i class="fas fa-pie-chart text-primary"></i> Match Score Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="scoreDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Project Performance Chart -->
+    <div class="col-lg-6">
+        <div class="analytics-card">
+            <div class="card-header">
+                <h5><i class="fas fa-bar-chart text-success"></i> Project Performance</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="projectPerformanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Developer Skills Radar -->
+    <div class="col-lg-6">
+        <div class="analytics-card">
+            <div class="card-header">
+                <h5><i class="fas fa-radar-chart text-info"></i> Skills Analysis</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="skillsRadarChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Match Trends -->
+    <div class="col-lg-6">
+        <div class="analytics-card">
+            <div class="card-header">
+                <h5><i class="fas fa-line-chart text-warning"></i> Match Quality Trends</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Matches Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="analytics-card">
+            <div class="card-header">
+                <h5><i class="fas fa-trophy text-warning"></i> Top Matches</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Project</th>
+                                <th>Developer</th>
+                                <th>Technical Score</th>
+                                <th>AI Affinity</th>
+                                <th>Motivation</th>
+                                <th>Experience</th>
+                                <th>Overall Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set sorted_matches = all_matches | sort(attribute='average_score', reverse=True) %}
+                            {% for match in sorted_matches[:10] %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary">#{{ loop.index }}</span>
+                                </td>
+                                <td>{{ match.project_name }}</td>
+                                <td>{{ match.developer_name }}</td>
+                                <td>
+                                    <div class="score-bar">
+                                        <div class="score-fill {% if match.technical_score >= 80 %}score-excellent{% elif match.technical_score >= 60 %}score-good{% elif match.technical_score >= 40 %}score-fair{% else %}score-poor{% endif %}" 
+                                             style="width: {{ match.technical_score }}%"></div>
+                                    </div>
+                                    <small>{{ "%.1f"|format(match.technical_score) }}%</small>
+                                </td>
+                                <td>
+                                    <div class="score-bar">
+                                        <div class="score-fill {% if match.technical_affinity >= 80 %}score-excellent{% elif match.technical_affinity >= 60 %}score-good{% elif match.technical_affinity >= 40 %}score-fair{% else %}score-poor{% endif %}" 
+                                             style="width: {{ match.technical_affinity }}%"></div>
+                                    </div>
+                                    <small>{{ "%.1f"|format(match.technical_affinity) }}%</small>
+                                </td>
+                                <td>
+                                    <div class="score-bar">
+                                        <div class="score-fill {% if match.motivational_affinity >= 80 %}score-excellent{% elif match.motivational_affinity >= 60 %}score-good{% elif match.motivational_affinity >= 40 %}score-fair{% else %}score-poor{% endif %}" 
+                                             style="width: {{ match.motivational_affinity }}%"></div>
+                                    </div>
+                                    <small>{{ "%.1f"|format(match.motivational_affinity) }}%</small>
+                                </td>
+                                <td>
+                                    <div class="score-bar">
+                                        <div class="score-fill {% if match.experience_relevance >= 80 %}score-excellent{% elif match.experience_relevance >= 60 %}score-good{% elif match.experience_relevance >= 40 %}score-fair{% else %}score-poor{% endif %}" 
+                                             style="width: {{ match.experience_relevance }}%"></div>
+                                    </div>
+                                    <small>{{ "%.1f"|format(match.experience_relevance) }}%</small>
+                                </td>
+                                <td>
+                                    <span class="badge {% if match.average_score >= 80 %}bg-success{% elif match.average_score >= 60 %}bg-info{% elif match.average_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ "%.1f"|format(match.average_score) }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Global data for charts
+    const matchData = {{ all_matches | tojson }};
+    const projectStats = {{ project_stats | tojson }};
+    const developerStats = {{ developer_stats | tojson }};
+    
+    // Chart instances
+    let scoreDistributionChart, projectPerformanceChart, skillsRadarChart, trendsChart;
+    
+    // Initialize charts when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCharts();
+    });
+    
+    function initializeCharts() {
+        createScoreDistributionChart();
+        createProjectPerformanceChart();
+        createSkillsRadarChart();
+        createTrendsChart();
+    }
+    
+    function createScoreDistributionChart() {
+        const ctx = document.getElementById('scoreDistributionChart').getContext('2d');
+        
+        // Calculate score distribution
+        const excellent = matchData.filter(m => m.average_score >= 80).length;
+        const good = matchData.filter(m => m.average_score >= 60 && m.average_score < 80).length;
+        const fair = matchData.filter(m => m.average_score >= 40 && m.average_score < 60).length;
+        const poor = matchData.filter(m => m.average_score < 40).length;
+        
+        scoreDistributionChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Excellent (80-100%)', 'Good (60-79%)', 'Fair (40-59%)', 'Poor (0-39%)'],
+                datasets: [{
+                    data: [excellent, good, fair, poor],
+                    backgroundColor: [
+                        '#28a745',
+                        '#17a2b8', 
+                        '#ffc107',
+                        '#dc3545'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    function createProjectPerformanceChart() {
+        const ctx = document.getElementById('projectPerformanceChart').getContext('2d');
+        
+        const projectNames = Object.values(projectStats).map(p => p.name);
+        const projectScores = Object.values(projectStats).map(p => p.avg_score);
+        
+        projectPerformanceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: projectNames,
+                datasets: [{
+                    label: 'Average Match Score',
+                    data: projectScores,
+                    backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+    
+    function createSkillsRadarChart() {
+        const ctx = document.getElementById('skillsRadarChart').getContext('2d');
+        
+        // Calculate average scores for each category
+        const avgTechnical = matchData.reduce((sum, m) => sum + m.technical_score, 0) / matchData.length;
+        const avgAffinity = matchData.reduce((sum, m) => sum + m.technical_affinity, 0) / matchData.length;
+        const avgMotivation = matchData.reduce((sum, m) => sum + m.motivational_affinity, 0) / matchData.length;
+        const avgExperience = matchData.reduce((sum, m) => sum + m.experience_relevance, 0) / matchData.length;
+        
+        skillsRadarChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Technical Skills', 'Technical Affinity', 'Motivation', 'Experience'],
+                datasets: [{
+                    label: 'Average Scores',
+                    data: [avgTechnical, avgAffinity, avgMotivation, avgExperience],
+                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(102, 126, 234, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+    
+    function createTrendsChart() {
+        const ctx = document.getElementById('trendsChart').getContext('2d');
+        
+        // Group matches by project for trend analysis
+        const projectTrends = {};
+        matchData.forEach(match => {
+            if (!projectTrends[match.project_name]) {
+                projectTrends[match.project_name] = [];
+            }
+            projectTrends[match.project_name].push(match.average_score);
+        });
+        
+        const datasets = Object.keys(projectTrends).slice(0, 5).map((projectName, index) => {
+            const colors = ['#667eea', '#28a745', '#dc3545', '#ffc107', '#17a2b8'];
+            return {
+                label: projectName,
+                data: projectTrends[projectName],
+                borderColor: colors[index],
+                backgroundColor: colors[index] + '20',
+                fill: false,
+                tension: 0.4
+            };
+        });
+        
+        trendsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Object.values(developerStats).map(d => d.name),
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+    
+    function updateCharts() {
+        const projectFilter = document.getElementById('projectFilter').value;
+        const developerFilter = document.getElementById('developerFilter').value;
+        
+        // Filter data based on selections
+        let filteredData = matchData;
+        
+        if (projectFilter) {
+            filteredData = filteredData.filter(m => m.project_id == projectFilter);
+        }
+        
+        if (developerFilter) {
+            filteredData = filteredData.filter(m => m.developer_id == developerFilter);
+        }
+        
+        // Update charts with filtered data
+        updateChartsWithData(filteredData);
+        
+        // Show success message
+        const toast = document.createElement('div');
+        toast.className = 'toast position-fixed bottom-0 end-0 m-3';
+        toast.innerHTML = `
+            <div class="toast-body bg-success text-white rounded">
+                <i class="fas fa-check"></i> Charts updated successfully!
+            </div>
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 3000);
+    }
+    
+    function updateChartsWithData(data) {
+        // Update score distribution
+        const excellent = data.filter(m => m.average_score >= 80).length;
+        const good = data.filter(m => m.average_score >= 60 && m.average_score < 80).length;
+        const fair = data.filter(m => m.average_score >= 40 && m.average_score < 60).length;
+        const poor = data.filter(m => m.average_score < 40).length;
+        
+        scoreDistributionChart.data.datasets[0].data = [excellent, good, fair, poor];
+        scoreDistributionChart.update();
+        
+        // Update radar chart
+        if (data.length > 0) {
+            const avgTechnical = data.reduce((sum, m) => sum + m.technical_score, 0) / data.length;
+            const avgAffinity = data.reduce((sum, m) => sum + m.technical_affinity, 0) / data.length;
+            const avgMotivation = data.reduce((sum, m) => sum + m.motivational_affinity, 0) / data.length;
+            const avgExperience = data.reduce((sum, m) => sum + m.experience_relevance, 0) / data.length;
+            
+            skillsRadarChart.data.datasets[0].data = [avgTechnical, avgAffinity, avgMotivation, avgExperience];
+            skillsRadarChart.update();
+        }
+    }
+    
+    function resetFilters() {
+        document.getElementById('projectFilter').value = '';
+        document.getElementById('developerFilter').value = '';
+        updateChartsWithData(matchData);
+    }
+</script>
+{% endblock %}

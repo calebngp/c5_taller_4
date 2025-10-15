@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence
+             https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
+             version="3.0">
+    
+    <persistence-unit name="DevMatchPU" transaction-type="RESOURCE_LOCAL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        
+        <!-- Entidades JPA -->
+        <class>com.devmatch.entity.Developer</class>
+        <class>com.devmatch.entity.Project</class>
+        <class>com.devmatch.entity.Technology</class>
+        <class>com.devmatch.entity.Experience</class>
+        
+        <properties>
+            <!-- Configuración de la base de datos PostgreSQL -->
+            <property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver"/>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/devmatch_ai"/>
+            <property name="jakarta.persistence.jdbc.user" value="calebnehemias"/>
+            <property name="jakarta.persistence.jdbc.password" value=""/>
+            
+            <!-- Configuración de Hibernate -->
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+            
+            <!-- Estrategia de generación de esquema -->
+            <!-- validate: solo valida el esquema, no modifica la BD -->
+            <property name="hibernate.hbm2ddl.auto" value="validate"/>
+            
+            <!-- Pool de conexiones -->
+            <property name="hibernate.connection.pool_size" value="10"/>
+            
+            <!-- Logging -->
+            <property name="hibernate.use_sql_comments" value="true"/>
+        </properties>
+    </persistence-unit>
+</persistence>

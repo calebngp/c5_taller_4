@@ -1,4 +1,10 @@
-# DevMatch AI - Project-Developer Matching System
+# 🚀 DevMatch AI - Smart Developer-Project Matching
+
+## 📚 Proyecto Académico - Arquitectura Híbrida Java + Python
+
+**Alumno:** Caleb Nehemias  
+**Fecha:** 15 de Octubre, 2025  
+**Repositorio:** c5_taller_4
 
 ## Overview
 DevMatch AI is an intelligent matching system that uses DeepSeek AI to analyze the compatibility between developers and projects. It includes a **Java 21 Server Launcher** that manages the Python Flask backend with modern features and robust process management.
@@ -48,6 +54,66 @@ curl -fsSL https://ollama.ai/install.sh | sh
 # Pull DeepSeek model
 ollama pull deepseek-r1:1.5b
 ```
+
+## 🎓 REQUISITOS ACADÉMICOS CUMPLIDOS
+
+### ✅ 1. Entidades JPA (30%)
+**Ubicación:** `src/main/java/com/devmatch/entity/`
+
+- ✅ `Developer.java` - Entidad completa con @Entity, @Table, @Id, relaciones
+- ✅ `Project.java` - Mapeo correcto con validaciones
+- ✅ `Technology.java` - Relaciones ManyToMany bidireccionales
+- ✅ `Experience.java` - Relación ManyToOne con Developer
+
+**Características:**
+- Todas las anotaciones requeridas: @Entity, @Table, @Id, @GeneratedValue
+- Relaciones: @OneToMany, @ManyToOne, @ManyToMany, @JoinTable
+- Validaciones: @NotNull, @Size, @Email
+- Nombres en camelCase siguiendo convenciones Java
+
+### ✅ 2. CRUDs REST (40%)
+**Ubicación:** `api_routes.py`
+
+**4 CRUDs completos con 20 endpoints:**
+
+1. **Developer CRUD** (5 endpoints)
+2. **Project CRUD** (5 endpoints)
+3. **Technology CRUD** (5 endpoints)
+4. **Experience CRUD** (5 endpoints)
+
+**Códigos HTTP implementados:**
+- 200 OK - Operaciones exitosas
+- 201 Created - Creación de recursos
+- 204 No Content - Eliminación exitosa
+- 400 Bad Request - Validación fallida
+- 404 Not Found - Recurso no encontrado
+
+### ✅ 3. Validaciones (10%)
+- Validaciones en entidades JPA con anotaciones
+- Manejo de errores con códigos HTTP apropiados
+- Mensajes descriptivos en respuestas
+
+### ✅ 4. Buenas Prácticas (10%)
+- Estructura en capas: entity/, dto/, service/
+- Código limpio y documentado
+- Logging con SLF4J
+- Separación de responsabilidades
+
+### ✅ 5. Documentación (10%)
+- `README_ARQUITECTURA.md` - Documentación técnica completa
+- `GUIA_EVALUACION.md` - Guía para evaluación del profesor
+- `ENTREGA_FINAL.md` - Resumen de entregables
+- `GUIA_PRESENTACION.md` - Guía para presentar el proyecto
+- Comentarios Javadoc en código
+
+## 📚 DOCUMENTACIÓN ADICIONAL
+
+Para más detalles sobre la implementación y arquitectura, consulta:
+
+- 📖 [README_ARQUITECTURA.md](README_ARQUITECTURA.md) - Arquitectura detallada
+- 👨‍🏫 [GUIA_EVALUACION.md](GUIA_EVALUACION.md) - Para el profesor
+- 📊 [RESUMEN_VISUAL.md](RESUMEN_VISUAL.md) - Resumen visual del proyecto
+- 🎤 [GUIA_PRESENTACION.md](GUIA_PRESENTACION.md) - Guía de presentación
 
 ### Install Python Dependencies
 ```bash

@@ -35,6 +35,10 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 # Initialize database
 db.init_app(app)
 
+# Register API Blueprint (CRUD REST endpoints)
+from api_routes import api_bp
+app.register_blueprint(api_bp)
+
 @app.route('/')
 def index():
     """Main route - Homepage with system overview"""
