@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -56,6 +57,19 @@ public class Developer {
     // Relación One-to-Many con Experiences
     @OneToMany(mappedBy = "developer", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Experience> experiences = new HashSet<>();
+    
+    // Campos de auditoría
+    @Column(name = "usuario_creacion", length = 100)
+    private String usuarioCreacion;
+    
+    @Column(name = "usuario_modificacion", length = 100)
+    private String usuarioModificacion;
+    
+    @Column(name = "fecha_creacion")
+    private LocalDateTime fechaCreacion;
+    
+    @Column(name = "fecha_modificacion")
+    private LocalDateTime fechaModificacion;
     
     // Constructors
     public Developer() {}
@@ -148,6 +162,64 @@ public class Developer {
     public void removeExperience(Experience experience) {
         experiences.remove(experience);
         experience.setDeveloper(null);
+    }
+    
+    // Getters and Setters para campos de auditoría
+    public String getUsuarioCreacion() {
+        return usuarioCreacion;
+    }
+    
+    public void setUsuarioCreacion(String usuarioCreacion) {
+        this.usuarioCreacion = usuarioCreacion;
+    }
+    
+    public String getUsuarioModificacion() {
+        return usuarioModificacion;
+    }
+    
+    public void setUsuarioModificacion(String usuarioModificacion) {
+        this.usuarioModificacion = usuarioModificacion;
+    }
+    
+    public LocalDateTime getFechaCreacion() {
+        return fechaCreacion;
+    }
+    
+    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
+    }
+    
+    public LocalDateTime getFechaModificacion() {
+        return fechaModificacion;
+    }
+    
+    public void setFechaModificacion(LocalDateTime fechaModificacion) {
+        this.fechaModificacion = fechaModificacion;
+    }
+    
+    // Callbacks de JPA para auditoría automática
+    /**
+     * Se ejecuta automáticamente antes de insertar un nuevo registro
+     * Asigna la fecha de creación y el usuario que creó el registro
+     */
+    @PrePersist
+    protected void onCreate() {
+        fechaCreacion = LocalDateTime.now();
+        if (usuarioCreacion == null || usuarioCreacion.isEmpty()) {
+            // Obtener el usuario del sistema o usar un valor por defecto
+            usuarioCreacion = System.getProperty("user.name", "system");
+        }
+    }
+    
+    /**
+     * Se ejecuta automáticamente antes de actualizar un registro existente
+     * Actualiza la fecha de modificación y el usuario que modificó el registro
+     */
+    @PreUpdate
+    protected void onUpdate() {
+        fechaModificacion = LocalDateTime.now();
+        // Obtener el usuario del sistema o usar un valor por defecto
+        usuarioModificacion = System.getProperty("user.name", "system");
     }
     
     @Override

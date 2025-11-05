@@ -1,0 +1,214 @@
+================================================================================
+DATOS FALSOS PARA TESTEAR DEVELOPERS - DevMatch AI
+================================================================================
+Formato: Nombre | Nivel Experiencia | Email | LinkedIn | GitHub | Motivación
+================================================================================
+
+1. Carlos Mendoza | Advanced | carlos.mendoza@email.com | linkedin.com/in/carlosmendoza | github.com/carlosmendoza | Apasionado por el desarrollo backend y arquitectura de software. Busco proyectos desafiantes que me permitan crecer profesionalmente.
+
+2. María García | Intermediate | maria.garcia@email.com | linkedin.com/in/mariagarcia | github.com/mariagarcia | Desarrolladora full-stack con experiencia en React y Node.js. Me interesa trabajar en proyectos innovadores y aprender nuevas tecnologías.
+
+3. Juan Pérez | Beginner | juan.perez@email.com | linkedin.com/in/juanperez | github.com/juanperez | Estudiante de ingeniería de software buscando oportunidades para aplicar mis conocimientos y ganar experiencia práctica en desarrollo web.
+
+4. Ana Rodríguez | Advanced | ana.rodriguez@email.com | linkedin.com/in/anarodriguez | github.com/anarodriguez | Especialista en Python y machine learning. Busco proyectos que combinen desarrollo de software con inteligencia artificial.
+
+5. Luis Fernández | Intermediate | luis.fernandez@email.com | linkedin.com/in/luisfernandez | github.com/luisfernandez | Desarrollador mobile con experiencia en React Native y Flutter. Me apasiona crear aplicaciones móviles intuitivas y funcionales.
+
+6. Sofía Martínez | Beginner | sofia.martinez@email.com | linkedin.com/in/sofiamartinez | github.com/sofiamartinez | Estudiante recién graduada en ciencias de la computación. Entusiasmada por comenzar mi carrera en desarrollo de software.
+
+7. Diego López | Advanced | diego.lopez@email.com | linkedin.com/in/diegolopez | github.com/diegolopez | Arquitecto de software con 8 años de experiencia. Especializado en microservicios, cloud computing y DevOps.
+
+8. Laura Sánchez | Intermediate | laura.sanchez@email.com | linkedin.com/in/laurasanchez | github.com/laurasanchez | Desarrolladora frontend especializada en Vue.js y diseño UI/UX. Me encanta crear interfaces hermosas y funcionales.
+
+9. Roberto Torres | Beginner | roberto.torres@email.com | linkedin.com/in/robertotorres | github.com/robertotorres | Autodidacta en programación desde hace 2 años. Busco mi primera oportunidad profesional en desarrollo web.
+
+10. Carmen Ruiz | Advanced | carmen.ruiz@email.com | linkedin.com/in/carmenruiz | github.com/carmenruiz | Senior developer con experiencia en múltiples lenguajes. Busco proyectos que me permitan liderar equipos y tomar decisiones técnicas importantes.
+
+11. Andrés Morales | Intermediate | andres.morales@email.com | linkedin.com/in/andresmorales | github.com/andresmorales | Desarrollador backend especializado en Java y Spring Boot. Interesado en proyectos enterprise y sistemas distribuidos.
+
+12. Patricia Jiménez | Beginner | patricia.jimenez@email.com | linkedin.com/in/patriciajimenez | github.com/patriciajimenez | Recién egresada del bootcamp de desarrollo web. Busco oportunidades para aplicar mis conocimientos en JavaScript y React.
+
+13. Fernando Castro | Advanced | fernando.castro@email.com | linkedin.com/in/fernandocastro | github.com/fernandocastro | CTO con 12 años de experiencia. Especializado en escalabilidad, performance y arquitectura de sistemas de alto tráfico.
+
+14. Gabriela Vega | Intermediate | gabriela.vega@email.com | linkedin.com/in/gabrielavega | github.com/gabrielavega | Desarrolladora full-stack con experiencia en Python/Django y React. Me interesa el desarrollo de APIs REST y aplicaciones web modernas.
+
+15. Ricardo Herrera | Beginner | ricardo.herrera@email.com | linkedin.com/in/ricardoherrera | github.com/ricardoherrera | Estudiante de último semestre. He realizado proyectos personales en React y Node.js. Busco mi primera experiencia laboral.
+
+================================================================================
+FORMATO JSON PARA API (POST /api/developers)
+================================================================================
+
+Ejemplo 1:
+{
+  "name": "Carlos Mendoza",
+  "experience_level": "Advanced",
+  "email": "carlos.mendoza@email.com",
+  "linkedin": "linkedin.com/in/carlosmendoza",
+  "github": "github.com/carlosmendoza",
+  "motivation": "Apasionado por el desarrollo backend y arquitectura de software. Busco proyectos desafiantes que me permitan crecer profesionalmente.",
+  "skills": []
+}
+
+Ejemplo 2:
+{
+  "name": "María García",
+  "experience_level": "Intermediate",
+  "email": "maria.garcia@email.com",
+  "linkedin": "linkedin.com/in/mariagarcia",
+  "github": "github.com/mariagarcia",
+  "motivation": "Desarrolladora full-stack con experiencia en React y Node.js. Me interesa trabajar en proyectos innovadores y aprender nuevas tecnologías.",
+  "skills": []
+}
+
+Ejemplo 3:
+{
+  "name": "Juan Pérez",
+  "experience_level": "Beginner",
+  "email": "juan.perez@email.com",
+  "linkedin": "linkedin.com/in/juanperez",
+  "github": "github.com/juanperez",
+  "motivation": "Estudiante de ingeniería de software buscando oportunidades para aplicar mis conocimientos y ganar experiencia práctica en desarrollo web.",
+  "skills": []
+}
+
+Ejemplo 4:
+{
+  "name": "Ana Rodríguez",
+  "experience_level": "Advanced",
+  "email": "ana.rodriguez@email.com",
+  "linkedin": "linkedin.com/in/anarodriguez",
+  "github": "github.com/anarodriguez",
+  "motivation": "Especialista en Python y machine learning. Busco proyectos que combinen desarrollo de software con inteligencia artificial.",
+  "skills": []
+}
+
+Ejemplo 5:
+{
+  "name": "Luis Fernández",
+  "experience_level": "Intermediate",
+  "email": "luis.fernandez@email.com",
+  "linkedin": "linkedin.com/in/luisfernandez",
+  "github": "github.com/luisfernandez",
+  "motivation": "Desarrollador mobile con experiencia en React Native y Flutter. Me apasiona crear aplicaciones móviles intuitivas y funcionales.",
+  "skills": []
+}
+
+Ejemplo 6:
+{
+  "name": "Sofía Martínez",
+  "experience_level": "Beginner",
+  "email": "sofia.martinez@email.com",
+  "linkedin": "linkedin.com/in/sofiamartinez",
+  "github": "github.com/sofiamartinez",
+  "motivation": "Estudiante recién graduada en ciencias de la computación. Entusiasmada por comenzar mi carrera en desarrollo de software.",
+  "skills": []
+}
+
+Ejemplo 7:
+{
+  "name": "Diego López",
+  "experience_level": "Advanced",
+  "email": "diego.lopez@email.com",
+  "linkedin": "linkedin.com/in/diegolopez",
+  "github": "github.com/diegolopez",
+  "motivation": "Arquitecto de software con 8 años de experiencia. Especializado en microservicios, cloud computing y DevOps.",
+  "skills": []
+}
+
+Ejemplo 8:
+{
+  "name": "Laura Sánchez",
+  "experience_level": "Intermediate",
+  "email": "laura.sanchez@email.com",
+  "linkedin": "linkedin.com/in/laurasanchez",
+  "github": "github.com/laurasanchez",
+  "motivation": "Desarrolladora frontend especializada en Vue.js y diseño UI/UX. Me encanta crear interfaces hermosas y funcionales.",
+  "skills": []
+}
+
+Ejemplo 9:
+{
+  "name": "Roberto Torres",
+  "experience_level": "Beginner",
+  "email": "roberto.torres@email.com",
+  "linkedin": "linkedin.com/in/robertotorres",
+  "github": "github.com/robertotorres",
+  "motivation": "Autodidacta en programación desde hace 2 años. Busco mi primera oportunidad profesional en desarrollo web.",
+  "skills": []
+}
+
+Ejemplo 10:
+{
+  "name": "Carmen Ruiz",
+  "experience_level": "Advanced",
+  "email": "carmen.ruiz@email.com",
+  "linkedin": "linkedin.com/in/carmenruiz",
+  "github": "github.com/carmenruiz",
+  "motivation": "Senior developer con experiencia en múltiples lenguajes. Busco proyectos que me permitan liderar equipos y tomar decisiones técnicas importantes.",
+  "skills": []
+}
+
+Ejemplo 11:
+{
+  "name": "Andrés Morales",
+  "experience_level": "Intermediate",
+  "email": "andres.morales@email.com",
+  "linkedin": "linkedin.com/in/andresmorales",
+  "github": "github.com/andresmorales",
+  "motivation": "Desarrollador backend especializado en Java y Spring Boot. Interesado en proyectos enterprise y sistemas distribuidos.",
+  "skills": []
+}
+
+Ejemplo 12:
+{
+  "name": "Patricia Jiménez",
+  "experience_level": "Beginner",
+  "email": "patricia.jimenez@email.com",
+  "linkedin": "linkedin.com/in/patriciajimenez",
+  "github": "github.com/patriciajimenez",
+  "motivation": "Recién egresada del bootcamp de desarrollo web. Busco oportunidades para aplicar mis conocimientos en JavaScript y React.",
+  "skills": []
+}
+
+Ejemplo 13:
+{
+  "name": "Fernando Castro",
+  "experience_level": "Advanced",
+  "email": "fernando.castro@email.com",
+  "linkedin": "linkedin.com/in/fernandocastro",
+  "github": "github.com/fernandocastro",
+  "motivation": "CTO con 12 años de experiencia. Especializado en escalabilidad, performance y arquitectura de sistemas de alto tráfico.",
+  "skills": []
+}
+
+Ejemplo 14:
+{
+  "name": "Gabriela Vega",
+  "experience_level": "Intermediate",
+  "email": "gabriela.vega@email.com",
+  "linkedin": "linkedin.com/in/gabrielavega",
+  "github": "github.com/gabrielavega",
+  "motivation": "Desarrolladora full-stack con experiencia en Python/Django y React. Me interesa el desarrollo de APIs REST y aplicaciones web modernas.",
+  "skills": []
+}
+
+Ejemplo 15:
+{
+  "name": "Ricardo Herrera",
+  "experience_level": "Beginner",
+  "email": "ricardo.herrera@email.com",
+  "linkedin": "linkedin.com/in/ricardoherrera",
+  "github": "github.com/ricardoherrera",
+  "motivation": "Estudiante de último semestre. He realizado proyectos personales en React y Node.js. Busco mi primera experiencia laboral.",
+  "skills": []
+}
+
+================================================================================
+NOTAS:
+- Los campos "name" y "experience_level" son REQUERIDOS
+- Los campos "email", "linkedin", "github", "motivation" son OPCIONALES
+- El campo "skills" debe ser un array de IDs de tecnologías (puede estar vacío [])
+- Los niveles de experiencia válidos son: "Beginner", "Intermediate", "Advanced"
+- Los emails deben ser únicos en la base de datos
+================================================================================
+

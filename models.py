@@ -4,9 +4,11 @@
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import Integer, String, Text, Table, Column, ForeignKey
+from sqlalchemy import Integer, String, Text, Table, Column, ForeignKey, DateTime, event
 from typing import List
+from datetime import datetime
 import json
+import os
 
 class Base(DeclarativeBase):
     pass
@@ -64,6 +66,12 @@ class Project(db.Model):
     project_type: Mapped[str] = mapped_column(String(50), nullable=False)  # Web, Mobile, Desktop
     status: Mapped[str] = mapped_column(String(50), default='Open', nullable=False)  # Open, Closed, In Progress
     
+    # Campos de auditoría
+    usuario_creacion: Mapped[str] = mapped_column(String(100), nullable=True)
+    usuario_modificacion: Mapped[str] = mapped_column(String(100), nullable=True)
+    fecha_creacion: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    fecha_modificacion: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    
     # Relationships
     required_technologies: Mapped[List["Technology"]] = relationship(
         secondary=project_technologies, back_populates="projects"
@@ -80,7 +88,11 @@ class Project(db.Model):
             'experience_level': self.experience_level,
             'project_type': self.project_type,
             'status': self.status,
-            'required_technologies': [tech.name for tech in self.required_technologies]
+            'required_technologies': [tech.name for tech in self.required_technologies],
+            'usuario_creacion': self.usuario_creacion,
+            'usuario_modificacion': self.usuario_modificacion,
+            'fecha_creacion': self.fecha_creacion.isoformat() if self.fecha_creacion else None,
+            'fecha_modificacion': self.fecha_modificacion.isoformat() if self.fecha_modificacion else None
         }
 
 class Experience(db.Model):
@@ -115,6 +127,12 @@ class Developer(db.Model):
     linkedin: Mapped[str] = mapped_column(String(500), nullable=True)
     github: Mapped[str] = mapped_column(String(500), nullable=True)
     
+    # Campos de auditoría
+    usuario_creacion: Mapped[str] = mapped_column(String(100), nullable=True)
+    usuario_modificacion: Mapped[str] = mapped_column(String(100), nullable=True)
+    fecha_creacion: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    fecha_modificacion: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    
     # Relationships
     skills: Mapped[List["Technology"]] = relationship(
         secondary=developer_skills, back_populates="developers"
@@ -136,7 +154,11 @@ class Developer(db.Model):
             'linkedin': self.linkedin,
             'github': self.github,
             'skills': [skill.name for skill in self.skills],
-            'experiences': [exp.description for exp in self.experiences]
+            'experiences': [exp.description for exp in self.experiences],
+            'usuario_creacion': self.usuario_creacion,
+            'usuario_modificacion': self.usuario_modificacion,
+            'fecha_creacion': self.fecha_creacion.isoformat() if self.fecha_creacion else None,
+            'fecha_modificacion': self.fecha_modificacion.isoformat() if self.fecha_modificacion else None
         }
 
 class MatchResult(db.Model):
@@ -171,3 +193,42 @@ class MatchResult(db.Model):
             'ai_comment': self.ai_comment,
             'created_at': self.created_at
         }
+
+
+# ============================================================
+# Eventos de SQLAlchemy para Auditoría Automática
+# ============================================================
+
+def get_current_user():
+    """Obtiene el usuario actual del sistema o usa un valor por defecto"""
+    return os.getenv('USER') or os.getenv('USERNAME') or 'system'
+
+
+@event.listens_for(Developer, 'before_insert')
+def set_developer_audit_on_insert(mapper, connection, target):
+    """Evento que se ejecuta antes de insertar un Developer"""
+    target.fecha_creacion = datetime.now()
+    if not target.usuario_creacion:
+        target.usuario_creacion = get_current_user()
+
+
+@event.listens_for(Developer, 'before_update')
+def set_developer_audit_on_update(mapper, connection, target):
+    """Evento que se ejecuta antes de actualizar un Developer"""
+    target.fecha_modificacion = datetime.now()
+    target.usuario_modificacion = get_current_user()
+
+
+@event.listens_for(Project, 'before_insert')
+def set_project_audit_on_insert(mapper, connection, target):
+    """Evento que se ejecuta antes de insertar un Project"""
+    target.fecha_creacion = datetime.now()
+    if not target.usuario_creacion:
+        target.usuario_creacion = get_current_user()
+
+
+@event.listens_for(Project, 'before_update')
+def set_project_audit_on_update(mapper, connection, target):
+    """Evento que se ejecuta antes de actualizar un Project"""
+    target.fecha_modificacion = datetime.now()
+    target.usuario_modificacion = get_current_user()

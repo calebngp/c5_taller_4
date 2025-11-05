@@ -6,7 +6,8 @@ import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from models import db, Developer, Technology, Experience, Project
 from database import (get_all_projects, get_all_developers, 
-                     get_project_by_id, get_developer_by_id, calculate_match_db)
+                     get_project_by_id, get_developer_by_id, calculate_match_db,
+                     save_match_result, get_match_results_for_project)
 from modelai3 import analyze_with_deepseek
 from dotenv import load_dotenv
 
@@ -394,14 +395,27 @@ def matching():
     if project_id:
         selected_project = get_project_by_id(project_id)
         if selected_project:
+            # Get project from database
+            project = Project.query.get(project_id)
+            if not project:
+                flash('Proyecto no encontrado', 'error')
+                return redirect(url_for('matching'))
+            
             # Perform matching analysis
             developers_list = get_all_developers()
-            for dev in developers_list:
-                technical_match = calculate_match_db(selected_project, dev)
-                ai_analysis = analyze_with_deepseek(selected_project, dev)
+            for dev_dict in developers_list:
+                dev = Developer.query.get(dev_dict['id'])
+                if not dev:
+                    continue
+                
+                technical_match = calculate_match_db(selected_project, dev_dict)
+                ai_analysis = analyze_with_deepseek(selected_project, dev_dict)
+                
+                # Save match result to database
+                save_match_result(project_id, dev.id, technical_match, ai_analysis)
                 
                 results.append({
-                    "developer": dev,
+                    "developer": dev_dict,
                     "technical_match": technical_match,
                     "ai_analysis": ai_analysis
                 })
@@ -426,15 +440,27 @@ def project_detail(project_id):
     if not project:
         return "Project not found", 404
     
+    # Get project from database
+    project_obj = Project.query.get(project_id)
+    if not project_obj:
+        return "Project not found", 404
+    
     # Generate matches for this project
     matches = []
     developers_list = get_all_developers()
-    for dev in developers_list:
-        technical_match = calculate_match_db(project, dev)
-        ai_analysis = analyze_with_deepseek(project, dev)
+    for dev_dict in developers_list:
+        dev = Developer.query.get(dev_dict['id'])
+        if not dev:
+            continue
+        
+        technical_match = calculate_match_db(project, dev_dict)
+        ai_analysis = analyze_with_deepseek(project, dev_dict)
+        
+        # Save match result to database
+        save_match_result(project_id, dev.id, technical_match, ai_analysis)
         
         matches.append({
-            "developer": dev,
+            "developer": dev_dict,
             "technical_match": technical_match,
             "ai_analysis": ai_analysis
         })
@@ -461,6 +487,73 @@ def developer_detail(developer_id):
                          developer=developer, 
                          projects=projects_list, 
                          calculate_match=calculate_match_db)
+
+@app.route('/projects/matches')
+def projects_with_matches():
+    """Show all projects with their saved matches"""
+    from models import MatchResult
+    
+    projects_list = get_all_projects()
+    projects_with_matches_data = []
+    
+    for project_dict in projects_list:
+        project = Project.query.get(project_dict['id'])
+        if not project:
+            continue
+        
+        # Get saved matches for this project
+        saved_matches = MatchResult.query.filter_by(project_id=project.id).order_by(
+            MatchResult.technical_match.desc()
+        ).all()
+        
+        matches_data = []
+        for match_result in saved_matches:
+            developer = Developer.query.get(match_result.developer_id)
+            if developer:
+                matches_data.append({
+                    "match_result": match_result,
+                    "developer": developer.to_dict(),
+                    "technical_match": match_result.technical_match,
+                    "ai_technical_affinity": match_result.ai_technical_affinity,
+                    "ai_motivational_affinity": match_result.ai_motivational_affinity,
+                    "ai_experience_relevance": match_result.ai_experience_relevance,
+                    "ai_comment": match_result.ai_comment,
+                    "created_at": match_result.created_at
+                })
+        
+        # Calculate average match score
+        avg_score = 0
+        if matches_data:
+            total = sum([
+                m["technical_match"] + 
+                (m["ai_technical_affinity"] or 0) + 
+                (m["ai_motivational_affinity"] or 0) + 
+                (m["ai_experience_relevance"] or 0)
+                for m in matches_data
+            ])
+            avg_score = total / (len(matches_data) * 4) if matches_data else 0
+        
+        projects_with_matches_data.append({
+            "project": project_dict,
+            "matches": matches_data,
+            "match_count": len(matches_data),
+            "average_score": avg_score
+        })
+    
+    # Sort by match count (descending) and then by average score
+    projects_with_matches_data.sort(key=lambda x: (x["match_count"], x["average_score"]), reverse=True)
+    
+    # Calculate statistics
+    total_matches = sum(p["match_count"] for p in projects_with_matches_data)
+    total_projects = len(projects_with_matches_data)
+    avg_matches_per_project = total_matches / total_projects if total_projects > 0 else 0
+    avg_score = sum(p["average_score"] for p in projects_with_matches_data) / total_projects if total_projects > 0 else 0
+    
+    return render_template('projects_matches.html', 
+                         projects_with_matches=projects_with_matches_data,
+                         total_matches=total_matches,
+                         avg_matches_per_project=avg_matches_per_project,
+                         avg_score=avg_score)
 
 @app.route('/api/results')
 def api_results():

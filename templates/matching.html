@@ -59,7 +59,7 @@
 <div class="row">
     <div class="col-12">
         <h2><i class="fas fa-search text-primary"></i> Find Best Developer Match</h2>
-        <p class="text-muted">Select a project to find the most suitable developers using AI analysis</p>
+        <p class="">Select a project to find the most suitable developers using AI analysis</p>
     </div>
 </div>
 
@@ -112,7 +112,7 @@
             </div>
             <div class="card-body">
                 <h6>{{ selected_project.name }}</h6>
-                <p class="small text-muted">{{ selected_project.description }}</p>
+                <p class="small ">{{ selected_project.description }}</p>
                 <div class="mb-2">
                     <strong>Technologies:</strong>
                     {% for tech in selected_project.required_technologies %}
@@ -127,9 +127,9 @@
         {% else %}
         <div class="card">
             <div class="card-body text-center">
-                <i class="fas fa-arrow-left fa-3x text-muted mb-3"></i>
+                <i class="fas fa-arrow-left fa-3x  mb-3"></i>
                 <h6>Select a project to start matching</h6>
-                <p class="text-muted small">Choose a project from the dropdown to see AI-powered developer recommendations</p>
+                <p class=" small">Choose a project from the dropdown to see AI-powered developer recommendations</p>
             </div>
         </div>
         {% endif %}
@@ -159,12 +159,12 @@
                         <div class="score-circle {{ score_class }}">
                             {{ "%.0f"|format(avg_score) }}%
                         </div>
-                        <small class="text-muted d-block mt-1">Overall Match</small>
+                        <small class=" d-block mt-1">Overall Match</small>
                     </div>
                     
                     <div class="col-md-4">
                         <h5><i class="fas fa-user-circle"></i> {{ result.developer.name }}</h5>
-                        <p class="text-muted mb-2">{{ result.developer.experience_level }} Level</p>
+                        <p class=" mb-2">{{ result.developer.experience_level }} Level</p>
                         <div class="mb-2">
                             {% for skill in result.developer.skills[:4] %}
                             <span class="badge bg-primary">{{ skill }}</span>
@@ -180,7 +180,7 @@
                             <div class="col-6">
                                 <div class="text-center">
                                     <div class="fw-bold text-success">{{ "%.0f"|format(result.technical_match) }}%</div>
-                                    <small class="text-muted">Technical</small>
+                                    <small class="">Technical</small>
                                     <div class="progress progress-custom mt-1">
                                         <div class="progress-bar bg-success progress-bar-custom" 
                                              style="width: {{ result.technical_match }}%"></div>
@@ -190,7 +190,7 @@
                             <div class="col-6">
                                 <div class="text-center">
                                     <div class="fw-bold text-primary">{{ result.ai_analysis.technical_affinity }}%</div>
-                                    <small class="text-muted">AI Technical</small>
+                                    <small class="">AI Technical</small>
                                     <div class="progress progress-custom mt-1">
                                         <div class="progress-bar bg-primary progress-bar-custom" 
                                              style="width: {{ result.ai_analysis.technical_affinity }}%"></div>
@@ -200,7 +200,7 @@
                             <div class="col-6 mt-2">
                                 <div class="text-center">
                                     <div class="fw-bold text-warning">{{ result.ai_analysis.motivational_affinity }}%</div>
-                                    <small class="text-muted">Motivation</small>
+                                    <small class="">Motivation</small>
                                     <div class="progress progress-custom mt-1">
                                         <div class="progress-bar bg-warning progress-bar-custom" 
                                              style="width: {{ result.ai_analysis.motivational_affinity }}%"></div>
@@ -210,7 +210,7 @@
                             <div class="col-6 mt-2">
                                 <div class="text-center">
                                     <div class="fw-bold text-info">{{ result.ai_analysis.experience_relevance }}%</div>
-                                    <small class="text-muted">Experience</small>
+                                    <small class="">Experience</small>
                                     <div class="progress progress-custom mt-1">
                                         <div class="progress-bar bg-info progress-bar-custom" 
                                              style="width: {{ result.ai_analysis.experience_relevance }}%"></div>
@@ -233,7 +233,7 @@
                 <div class="row mt-3">
                     <div class="col-12">
                         <details>
-                            <summary class="btn btn-outline-secondary btn-sm">
+                            <summary class="btn btn-sm">
                                 <i class="fas fa-eye"></i> View Relevant Experiences
                             </summary>
                             <div class="mt-3">
