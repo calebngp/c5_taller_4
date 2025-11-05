@@ -1,25 +1,30 @@
-# Usar una imagen base de Python
+# Use Python base image
 FROM python:3.11-slim
 
-# Establecer directorio de trabajo
+# Install curl for healthchecks and API calls
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
 WORKDIR /app
 
-# Copiar requirements primero (para aprovechar cache de Docker)
+# Copy requirements first (to leverage Docker cache)
 COPY requirements.txt .
 
-# Instalar dependencias de Python
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar el resto del código
+# Copy the rest of the code
 COPY . .
 
-# Exponer el puerto que usa Flask
+# Expose Flask port
 EXPOSE 3000
 
-# Variables de entorno por defecto
+# Default environment variables
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
 ENV PYTHONPATH=/app
+ENV OLLAMA_HOST=ollama
+ENV OLLAMA_PORT=11434
 
-# Comando para ejecutar la aplicación
+# Command to run the application
 CMD ["python", "app.py"]

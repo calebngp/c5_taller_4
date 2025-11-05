@@ -12,6 +12,7 @@ from modelai3 import analyze_with_deepseek
 from dotenv import load_dotenv
 import json
 import subprocess
+import requests
 
 # Load environment variables
 load_dotenv()
@@ -699,16 +700,38 @@ RULES:
 - Respond ONLY with the JSON, without additional text"""
     
     try:
-        result = subprocess.run(
-            ["ollama", "run", "deepseek-r1:1.5b"],
-            input=prompt.encode("utf-8"),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=60
-        )
-        output = result.stdout.decode("utf-8").strip()
+        # Get Ollama host and port from environment variables
+        ollama_host = os.getenv('OLLAMA_HOST', 'localhost')
+        ollama_port = os.getenv('OLLAMA_PORT', '11434')
         
-        # Limpiar el output: remover "Thinking..." y texto antes del JSON
+        # Use requests to call Ollama API instead of subprocess for better Docker compatibility
+        
+        # Prepare the API request
+        api_url = f"http://{ollama_host}:{ollama_port}/api/generate"
+        payload = {
+            "model": "deepseek-r1:1.5b",
+            "prompt": prompt,
+            "stream": False
+        }
+        
+        # Make the API request
+        response = requests.post(api_url, json=payload, timeout=60)
+        
+        if response.status_code == 200:
+            result_data = response.json()
+            output = result_data.get('response', '').strip()
+        else:
+            # Fallback to subprocess if API fails
+            result = subprocess.run(
+                ["ollama", "run", "deepseek-r1:1.5b"],
+                input=prompt.encode("utf-8"),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=60
+            )
+            output = result.stdout.decode("utf-8").strip()
+        
+        # Clean the output: remove "Thinking..." and text before JSON
         output_lower = output.lower()
         # Buscar el inicio del JSON
         json_start = output.find("{")

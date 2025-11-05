@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Base de datos PostgreSQL
   db:
@@ -18,6 +16,22 @@ services:
       timeout: 5s
       retries: 5
 
+  # Ollama AI Service
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # Aplicación Flask
   web:
     build: .
@@ -26,6 +40,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      ollama:
+        condition: service_started
     environment:
       - DB_HOST=db
       - DB_PORT=5432
@@ -33,10 +49,20 @@ services:
       - DB_USER=calebnehemias
       - DB_PASSWORD=password123
       - FLASK_ENV=development
+      - OLLAMA_HOST=ollama
+      - OLLAMA_PORT=11434
     volumes:
       # Montar el código para desarrollo (cambios en vivo)
       - .:/app
-    command: python app.py
+    command: >
+      sh -c "
+        echo 'Waiting for Ollama to be ready...' &&
+        sleep 10 &&
+        echo 'Checking if DeepSeek model is available...' &&
+        curl -f http://ollama:11434/api/tags || echo 'Ollama not ready yet' &&
+        echo 'Starting Flask application...' &&
+        python app.py
+      "
 
   # Adminer (interfaz web para PostgreSQL) - Opcional
   adminer:
@@ -48,3 +74,4 @@ services:
 
 volumes:
   postgres_data:
+  ollama_data:
