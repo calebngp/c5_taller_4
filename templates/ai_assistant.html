@@ -1,0 +1,556 @@
+{% extends "base.html" %}
+
+{% block title %}Asistente IA - DevMatch AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        max-height: 500px;
+        overflow-y: auto;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .message {
+        margin-bottom: 15px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+    
+    .message.user {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin-left: auto;
+        text-align: right;
+    }
+    
+    .message.ai {
+        background: white;
+        border: 1px solid #dee2e6;
+        margin-right: auto;
+    }
+    
+    .message.ai .ai-header {
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .loading-dots {
+        display: inline-block;
+    }
+    
+    .loading-dots span {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #667eea;
+        margin: 0 2px;
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+    
+    .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+    
+    @keyframes bounce {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+    }
+    
+    .suggestions-card {
+        background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+        border: 2px solid #667eea;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .tech-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        margin: 4px;
+        background: #667eea;
+        color: white;
+        border-radius: 20px;
+        font-size: 0.9em;
+    }
+    
+    .btn-fill-form {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-fill-form:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        color: white;
+    }
+    
+    .form-section {
+        display: none;
+        animation: fadeIn 0.5s ease-in;
+    }
+    
+    .form-section.show {
+        display: block;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-robot text-primary"></i> Asistente IA para Proyectos
+            </h2>
+            <a href="{{ url_for('projects') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Volver a Proyectos
+            </a>
+        </div>
+        <p class="">
+            Describe tu proyecto y qué quieres hacer. La IA te ayudará a identificar las tecnologías necesarias, 
+            el nivel de experiencia requerido y completará el formulario para publicar tu proyecto.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Chat Section -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="fas fa-comments"></i> Conversación con la IA</h5>
+            </div>
+            <div class="card-body">
+                <div class="chat-container" id="chatContainer">
+                    <div class="message ai">
+                        <div class="ai-header">
+                            <i class="fas fa-robot"></i> Asistente IA
+                        </div>
+                        <p class="mb-0">
+                            ¡Hola! 👋 Soy tu asistente de IA. Cuéntame sobre el proyecto que quieres desarrollar. 
+                            Puedes describir:
+                            <ul class="mb-0 mt-2">
+                                <li>Qué quieres construir</li>
+                                <li>Qué funcionalidades necesita</li>
+                                <li>Qué objetivos tiene</li>
+                                <li>Cualquier detalle que consideres importante</li>
+                            </ul>
+                            Con esa información, te ayudaré a identificar las tecnologías necesarias y completar el formulario del proyecto.
+                        </p>
+                    </div>
+                </div>
+                
+                <form id="chatForm">
+                    <div class="input-group">
+                        <textarea class="form-control" 
+                                  id="messageInput" 
+                                  rows="3" 
+                                  placeholder="Describe your project here... (e.g., I want to create a web application to manage inventory for a store...)"
+                                  required></textarea>
+                        <button class="btn btn-custom" type="submit" id="sendBtn">
+                            <i class="fas fa-paper-plane"></i> Send
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <input type="text" 
+                               class="form-control form-control-sm" 
+                               id="goalsInput" 
+                               placeholder="Additional goals (optional):">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Suggestions Section -->
+    <div class="col-lg-4">
+        <div class="card mb-4" id="suggestionsCard" style="display: none;">
+            <div class="card-header bg-success text-white">
+                <h5><i class="fas fa-lightbulb"></i> Sugerencias de la IA</h5>
+            </div>
+            <div class="card-body" id="suggestionsContent">
+                <!-- Se llenará dinámicamente -->
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-fill-form w-100" id="fillFormBtn">
+                    <i class="fas fa-magic"></i> Rellenar Formulario con estas Sugerencias
+                </button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-info-circle"></i> Cómo usar</h6>
+            </div>
+            <div class="card-body">
+                <ol class="small">
+                    <li>Describe tu proyecto en el chat</li>
+                    <li>La IA analizará y sugerirá tecnologías</li>
+                    <li>Revisa las sugerencias</li>
+                    <li>Haz clic en "Rellenar Formulario"</li>
+                    <li>Revisa y ajusta los campos si es necesario</li>
+                    <li>Publica tu proyecto</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form Section (Hidden by default) -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card form-section" id="projectFormSection">
+            <div class="card-header bg-info text-white">
+                <h5><i class="fas fa-file-alt"></i> Formulario del Proyecto</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('new_project') }}" id="projectForm" class="needs-validation" novalidate>
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Nombre del Proyecto *</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Descripción del Proyecto *</label>
+                                <textarea class="form-control" id="description" name="description" rows="5" required></textarea>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="experience_level" class="form-label">Nivel de Experiencia *</label>
+                                        <select class="form-select" id="experience_level" name="experience_level" required>
+                                            <option value="">Seleccionar...</option>
+                                            <option value="Beginner">Principiante</option>
+                                            <option value="Intermediate">Intermedio</option>
+                                            <option value="Advanced">Avanzado</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="project_type" class="form-label">Tipo de Proyecto *</label>
+                                        <select class="form-select" id="project_type" name="project_type" required>
+                                            <option value="">Seleccionar...</option>
+                                            <option value="Web">Aplicación Web</option>
+                                            <option value="Mobile">Aplicación Móvil</option>
+                                            <option value="Desktop">Aplicación de Escritorio</option>
+                                            <option value="API">API/Servicio Web</option>
+                                            <option value="Data Science">Ciencia de Datos</option>
+                                            <option value="DevOps">DevOps/Infraestructura</option>
+                                            <option value="Other">Otro</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4">
+                            <div class="mb-3">
+                                <label class="form-label">Tecnologías Requeridas</label>
+                                <div class="technologies-container" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; padding: 15px; border-radius: 8px; background-color: #f8f9fa;">
+                                    {% for technology in technologies %}
+                                    <div class="form-check">
+                                        <input class="form-check-input tech-checkbox" 
+                                               type="checkbox" 
+                                               value="{{ technology.id }}" 
+                                               id="tech_{{ technology.id }}" 
+                                               name="technologies">
+                                        <label class="form-check-label" for="tech_{{ technology.id }}">
+                                            {{ technology.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn btn-outline-secondary" id="backToChatBtn">
+                            <i class="fas fa-arrow-left"></i> Volver al Chat
+                        </button>
+                        <div>
+                            <button type="button" class="btn btn-outline-info me-2" id="previewBtn">
+                                <i class="fas fa-eye"></i> Vista Previa
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Publicar Proyecto
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentAnalysis = null;
+let conversationHistory = []; // Store conversation history
+
+document.getElementById('chatForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const messageInput = document.getElementById('messageInput');
+    const goalsInput = document.getElementById('goalsInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const chatContainer = document.getElementById('chatContainer');
+    
+    const message = messageInput.value.trim();
+    const goals = goalsInput.value.trim();
+    
+    if (!message) return;
+    
+    // Add user message to chat
+    addMessageToChat('user', message);
+    
+    // Add to conversation history
+    conversationHistory.push({
+        role: 'user',
+        content: message
+    });
+    
+    // Clear inputs
+    messageInput.value = '';
+    goalsInput.value = '';
+    
+    // Disable button and show loading
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+    
+    // Show loading message
+    const loadingId = addLoadingMessage();
+    
+    try {
+        const response = await fetch('/api/ai/analyze-project', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                description: message,
+                goals: goals,
+                conversation_history: conversationHistory
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Remove loading message
+        removeLoadingMessage(loadingId);
+        
+        if (data.success && data.data) {
+            currentAnalysis = data.data;
+            showSuggestions(data.data);
+            
+            // Add AI response to conversation history
+            conversationHistory.push({
+                role: 'assistant',
+                content: data.data.reasoning || data.data.recommendations || ''
+            });
+            
+            addMessageToChat('ai', formatAIMessage(data.data));
+        } else {
+            addMessageToChat('ai', 'Sorry, there was an error analyzing your project. Please try again with more details.');
+        }
+    } catch (error) {
+        removeLoadingMessage(loadingId);
+        addMessageToChat('ai', 'Connection error. Please verify that the AI server is running.');
+        console.error('Error:', error);
+    } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+    }
+});
+
+function addMessageToChat(type, content) {
+    const chatContainer = document.getElementById('chatContainer');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}`;
+    
+    if (type === 'user') {
+        messageDiv.textContent = content;
+    } else {
+        messageDiv.innerHTML = `
+            <div class="ai-header">
+                <i class="fas fa-robot"></i> Asistente IA
+            </div>
+            <div>${content}</div>
+        `;
+    }
+    
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function addLoadingMessage() {
+    const chatContainer = document.getElementById('chatContainer');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai';
+    messageDiv.id = 'loading-message';
+    messageDiv.innerHTML = `
+        <div class="ai-header">
+            <i class="fas fa-robot"></i> Asistente IA
+        </div>
+        <div class="loading-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        Analyzing your project...
+    `;
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    return 'loading-message';
+}
+
+function removeLoadingMessage(id) {
+    const loadingMsg = document.getElementById(id);
+    if (loadingMsg) {
+        loadingMsg.remove();
+    }
+}
+
+function formatAIMessage(analysis) {
+    let html = '<p><strong>Analysis completed:</strong></p>';
+    
+    if (analysis.error) {
+        html += `<p class="text-danger">${analysis.error}</p>`;
+    } else {
+        html += `<p><strong>Suggested name:</strong> ${analysis.name || 'Not suggested'}</p>`;
+        html += `<p><strong>Type:</strong> ${analysis.project_type || 'Not determined'}</p>`;
+        html += `<p><strong>Level:</strong> ${analysis.experience_level || 'Not determined'}</p>`;
+        
+        if (analysis.reasoning) {
+            html += `<p><strong>Reasoning:</strong> ${analysis.reasoning}</p>`;
+        }
+        
+        if (analysis.recommendations) {
+            html += `<div class="mt-3 p-3 bg-light rounded"><strong>Recommendations:</strong><br>${analysis.recommendations.replace(/\n/g, '<br>')}</div>`;
+        }
+        
+        // Show follow-up questions if available
+        if (analysis.follow_up_questions && analysis.follow_up_questions.length > 0) {
+            html += `<div class="mt-3 p-3 border border-primary rounded"><strong>To better understand your project, I have some questions:</strong><ul class="mt-2 mb-0">`;
+            analysis.follow_up_questions.forEach(question => {
+                html += `<li>${question}</li>`;
+            });
+            html += `</ul><p class="mt-2 mb-0 small text-muted">Please answer these questions in your next message.</p></div>`;
+        }
+    }
+    
+    return html;
+}
+
+function showSuggestions(analysis) {
+    const suggestionsCard = document.getElementById('suggestionsCard');
+    const suggestionsContent = document.getElementById('suggestionsContent');
+    
+    if (analysis.error) {
+        suggestionsCard.style.display = 'none';
+        return;
+    }
+    
+    let html = '';
+    
+    if (analysis.name) {
+        html += `<p><strong>Name:</strong> ${analysis.name}</p>`;
+    }
+    
+    if (analysis.experience_level) {
+        html += `<p><strong>Experience Level:</strong> ${analysis.experience_level}</p>`;
+    }
+    
+    if (analysis.project_type) {
+        html += `<p><strong>Project Type:</strong> ${analysis.project_type}</p>`;
+    }
+    
+    if (analysis.suggested_technologies && analysis.suggested_technologies.length > 0) {
+        html += '<p><strong>Suggested Technologies:</strong></p><div>';
+        analysis.suggested_technologies.forEach(tech => {
+            html += `<span class="tech-badge">${tech.name}</span>`;
+        });
+        html += '</div>';
+    }
+    
+    if (analysis.reasoning) {
+        html += `<div class="mt-3 p-3 bg-light rounded"><strong>Reasoning:</strong><br>${analysis.reasoning}</div>`;
+    }
+    
+    if (analysis.recommendations) {
+        html += `<div class="mt-3 p-3 bg-info bg-opacity-10 rounded"><strong>Recommendations:</strong><br>${analysis.recommendations.replace(/\n/g, '<br>')}</div>`;
+    }
+    
+    suggestionsContent.innerHTML = html;
+    suggestionsCard.style.display = 'block';
+}
+
+document.getElementById('fillFormBtn').addEventListener('click', function() {
+    if (!currentAnalysis) return;
+    
+    // Llenar formulario
+    document.getElementById('name').value = currentAnalysis.name || '';
+    document.getElementById('description').value = currentAnalysis.description || '';
+    document.getElementById('experience_level').value = currentAnalysis.experience_level || '';
+    document.getElementById('project_type').value = currentAnalysis.project_type || '';
+    
+    // Desmarcar todas las tecnologías primero
+    document.querySelectorAll('.tech-checkbox').forEach(cb => cb.checked = false);
+    
+    // Marcar tecnologías sugeridas
+    if (currentAnalysis.suggested_technologies) {
+        currentAnalysis.suggested_technologies.forEach(tech => {
+            const checkbox = document.getElementById(`tech_${tech.id}`);
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+        });
+    }
+    
+    // Mostrar sección del formulario
+    document.getElementById('projectFormSection').classList.add('show');
+    document.getElementById('projectFormSection').scrollIntoView({ behavior: 'smooth' });
+});
+
+document.getElementById('backToChatBtn').addEventListener('click', function() {
+    document.getElementById('projectFormSection').classList.remove('show');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Validación del formulario
+document.getElementById('projectForm').addEventListener('submit', function(e) {
+    if (!this.checkValidity()) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    this.classList.add('was-validated');
+});
+</script>
+{% endblock %}
+

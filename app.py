@@ -10,6 +10,8 @@ from database import (get_all_projects, get_all_developers,
                      save_match_result, get_match_results_for_project)
 from modelai3 import analyze_with_deepseek
 from dotenv import load_dotenv
+import json
+import subprocess
 
 # Load environment variables
 load_dotenv()
@@ -584,6 +586,464 @@ def api_results():
     
     return jsonify({"results": results})
 
+def analyze_project_with_ai(project_description, project_goals="", conversation_history=[]):
+    """
+    Analiza la descripción del proyecto con IA para sugerir tecnologías, 
+    nivel de experiencia, tipo de proyecto y descripción mejorada.
+    Mantiene el contexto de la conversación y hace preguntas de seguimiento.
+    """
+    # Obtener todas las tecnologías disponibles
+    technologies = Technology.query.order_by(Technology.name).all()
+    tech_names = [tech.name for tech in technologies]
+    
+    # Limitar la descripción si es muy larga para evitar problemas con el prompt
+    max_desc_length = 2000
+    if len(project_description) > max_desc_length:
+        project_description = project_description[:max_desc_length] + "..."
+    
+    # Construir el historial de conversación
+    history_text = ""
+    if conversation_history:
+        history_text = "\n\nCONVERSATION HISTORY:\n"
+        for msg in conversation_history[-5:]:  # Últimos 5 mensajes para mantener contexto
+            role = msg.get('role', 'user')
+            content = msg.get('content', '')
+            history_text += f"{role.upper()}: {content}\n"
+    
+    # Determinar si es la primera interacción o hay contexto previo
+    is_first_message = len(conversation_history) == 0
+    
+    if is_first_message:
+        # Primera interacción: hacer análisis inicial y preguntas
+        prompt = f"""You are an expert software development assistant helping users create well-structured projects. This is the FIRST interaction with the user.
+
+PROJECT DESCRIPTION:
+{project_description}
+
+ADDITIONAL GOALS:
+{project_goals if project_goals else "None specified"}
+
+AVAILABLE TECHNOLOGIES IN THE SYSTEM (you can only use these):
+{', '.join(tech_names)}
+
+Your task:
+1. Analyze the project description
+2. Provide initial recommendations
+3. Ask 2-3 follow-up questions to better understand the project requirements
+
+Respond EXACTLY with this JSON format (no comments, no additional text):
+{{
+    "name": "Descriptive project name",
+    "description": "Professional description based on the provided information",
+    "experience_level": "Beginner|Intermediate|Advanced",
+    "project_type": "Web|Mobile|Desktop|API|Data Science|DevOps|Other",
+    "suggested_technologies": ["name1", "name2"],
+    "reasoning": "Brief explanation of why these technologies and experience level are recommended",
+    "recommendations": "Detailed recommendations for the project development, including architecture suggestions, best practices, and important considerations",
+    "follow_up_questions": [
+        "Question 1 to understand the project better",
+        "Question 2 about specific requirements",
+        "Question 3 about priorities or constraints"
+    ],
+    "needs_more_info": true
+}}
+
+RULES:
+- Only use technologies from the provided list
+- If you mention a technology not in the list, find the most similar one available
+- Analyze the description to determine the required experience level
+- The type must be one of: Web, Mobile, Desktop, API, Data Science, DevOps, Other
+- Provide DETAILED recommendations (at least 3-4 sentences with specific advice)
+- Ask RELEVANT follow-up questions that will help better understand the project
+- Respond ONLY with the JSON, without additional text"""
+    else:
+        # Conversación en curso: usar contexto previo
+        prompt = f"""You are an expert software development assistant helping users create well-structured projects. This is a CONTINUATION of the conversation.
+
+CURRENT MESSAGE:
+{project_description}
+
+{history_text}
+
+ADDITIONAL GOALS:
+{project_goals if project_goals else "None specified"}
+
+AVAILABLE TECHNOLOGIES IN THE SYSTEM (you can only use these):
+{', '.join(tech_names)}
+
+Your task:
+1. Use the conversation history to understand the full context
+2. Update your analysis based on the new information provided
+3. Provide comprehensive recommendations
+4. If more information is still needed, ask 1-2 follow-up questions. If you have enough information, set needs_more_info to false
+
+Respond EXACTLY with this JSON format (no comments, no additional text):
+{{
+    "name": "Descriptive project name",
+    "description": "Professional and detailed description based on ALL the conversation context",
+    "experience_level": "Beginner|Intermediate|Advanced",
+    "project_type": "Web|Mobile|Desktop|API|Data Science|DevOps|Other",
+    "suggested_technologies": ["name1", "name2"],
+    "reasoning": "Brief explanation of why these technologies and experience level are recommended, considering all the information provided",
+    "recommendations": "COMPREHENSIVE and DETAILED recommendations for the project development. Include: architecture suggestions, technology stack rationale, best practices, security considerations, scalability advice, and development workflow recommendations. Minimum 5-6 sentences with specific, actionable advice.",
+    "follow_up_questions": ["Question 1", "Question 2"] or [],
+    "needs_more_info": true or false
+}}
+
+RULES:
+- Use ALL the conversation history to build a complete understanding
+- Only use technologies from the provided list
+- Provide VERY DETAILED recommendations (this is important - be specific and actionable)
+- If you have enough information to create a complete project specification, set needs_more_info to false
+- If more details are needed, ask targeted follow-up questions
+- Respond ONLY with the JSON, without additional text"""
+    
+    try:
+        result = subprocess.run(
+            ["ollama", "run", "deepseek-r1:1.5b"],
+            input=prompt.encode("utf-8"),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=60
+        )
+        output = result.stdout.decode("utf-8").strip()
+        
+        # Limpiar el output: remover "Thinking..." y texto antes del JSON
+        output_lower = output.lower()
+        # Buscar el inicio del JSON
+        json_start = output.find("{")
+        
+        # Si hay texto antes del JSON, intentar extraerlo
+        if json_start > 0:
+            # Buscar patrones comunes de "Thinking..." o texto introductorio
+            if "thinking" in output_lower[:json_start] or "okay" in output_lower[:json_start]:
+                # Intentar encontrar el JSON real más adelante
+                for i in range(json_start, len(output)):
+                    if output[i] == '{':
+                        json_start = i
+                        break
+        
+        # Intentar extraer JSON de la respuesta
+        parsed = None
+        json_text = None
+        
+        # Método 1: Buscar JSON completo
+        json_end = output.rfind("}")
+        if json_start >= 0 and json_end > json_start:
+            json_text = output[json_start:json_end + 1]
+            try:
+                parsed = json.loads(json_text)
+            except json.JSONDecodeError:
+                pass
+        
+        # Método 2: Si falló, buscar cualquier bloque JSON en el texto
+        if not parsed:
+            import re
+            json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+            matches = re.finditer(json_pattern, output, re.DOTALL)
+            for match in matches:
+                try:
+                    parsed = json.loads(match.group())
+                    json_text = match.group()
+                    break
+                except json.JSONDecodeError:
+                    continue
+        
+        # Método 3: Extraer información del texto aunque no sea JSON perfecto
+        if not parsed:
+            # Intentar extraer información útil del texto
+            parsed = extract_info_from_text(output, project_description, tech_names)
+        
+        # Validar y limpiar el resultado
+        if parsed:
+            # Validar que las tecnologías sugeridas existan en la base de datos
+            valid_techs = []
+            suggested = parsed.get("suggested_technologies", [])
+            
+            # Si no hay tecnologías sugeridas o son muy pocas, buscar en el texto
+            if not suggested or len(suggested) < 2:
+                # Buscar en el output de la IA y también en la descripción original
+                suggested_output = find_technologies_in_text(output, tech_names)
+                suggested_desc = find_technologies_in_text(project_description, tech_names)
+                # Combinar y eliminar duplicados
+                all_suggested = suggested_output + suggested_desc
+                seen_ids = set()
+                for tech in all_suggested:
+                    if isinstance(tech, dict) and tech.get('id') not in seen_ids:
+                        valid_techs.append(tech)
+                        seen_ids.add(tech.get('id'))
+            
+            # Procesar tecnologías sugeridas por la IA (pueden ser strings o dicts)
+            seen_ids = {tech.get('id') for tech in valid_techs if isinstance(tech, dict)}
+            
+            for tech_item in suggested:
+                # Si ya es un diccionario válido, usarlo directamente
+                if isinstance(tech_item, dict) and tech_item.get('id'):
+                    if tech_item.get('id') not in seen_ids:
+                        valid_techs.append(tech_item)
+                        seen_ids.add(tech_item.get('id'))
+                    continue
+                
+                # Si es un string, buscar la tecnología
+                tech_name = tech_item if isinstance(tech_item, str) else str(tech_item)
+                
+                # Buscar tecnología exacta o similar
+                tech = None
+                # Primero búsqueda exacta (case insensitive)
+                for t in technologies:
+                    if t.name.lower() == tech_name.lower():
+                        tech = t
+                        break
+                
+                # Si no encuentra exacta, buscar parcial
+                if not tech:
+                    tech = Technology.query.filter(
+                        Technology.name.ilike(f"%{tech_name}%")
+                    ).first()
+                
+                if tech and tech.id not in seen_ids:
+                    valid_techs.append(tech.to_dict())
+                    seen_ids.add(tech.id)
+            
+            parsed["suggested_technologies"] = valid_techs
+            
+            # Ensure all required fields exist
+            if not parsed.get("name"):
+                parsed["name"] = extract_project_name(project_description)
+            if not parsed.get("description"):
+                parsed["description"] = project_description[:500] + "..." if len(project_description) > 500 else project_description
+            if not parsed.get("experience_level") or parsed["experience_level"] not in ["Beginner", "Intermediate", "Advanced"]:
+                parsed["experience_level"] = determine_experience_level(project_description)
+            if not parsed.get("project_type") or parsed["project_type"] not in ["Web", "Mobile", "Desktop", "API", "Data Science", "DevOps", "Other"]:
+                parsed["project_type"] = determine_project_type(project_description)
+            
+            # Ensure recommendations are present and detailed
+            if not parsed.get("recommendations") or len(parsed.get("recommendations", "")) < 50:
+                parsed["recommendations"] = generate_default_recommendations(parsed, project_description)
+            
+            # Ensure follow_up_questions exists
+            if "follow_up_questions" not in parsed:
+                parsed["follow_up_questions"] = []
+            
+            # Ensure needs_more_info exists
+            if "needs_more_info" not in parsed:
+                parsed["needs_more_info"] = len(parsed.get("follow_up_questions", [])) > 0
+            
+            return parsed
+        else:
+            # Fallback: crear respuesta básica con análisis simple
+            return create_fallback_response(project_description, tech_names)
+            
+    except subprocess.TimeoutExpired:
+        return {
+            "error": "The AI query took too long. Please try again.",
+            "name": extract_project_name(project_description),
+            "description": project_description[:500] + "..." if len(project_description) > 500 else project_description,
+            "experience_level": determine_experience_level(project_description),
+            "project_type": determine_project_type(project_description),
+            "suggested_technologies": find_technologies_in_text(project_description, tech_names),
+            "reasoning": "Timeout in the AI query. A basic response was generated based on text analysis.",
+            "recommendations": "Try to be more specific or divide your description into smaller parts."
+        }
+    except Exception as e:
+        return {
+            "error": f"Error querying the AI: {str(e)}",
+            "name": extract_project_name(project_description),
+            "description": project_description[:500] + "..." if len(project_description) > 500 else project_description,
+            "experience_level": determine_experience_level(project_description),
+            "project_type": determine_project_type(project_description),
+            "suggested_technologies": find_technologies_in_text(project_description, tech_names),
+            "reasoning": f"Error processing: {str(e)}",
+            "recommendations": "Please review and manually adjust the fields."
+        }
+
+def extract_info_from_text(text, project_description, tech_names):
+    """Extracts useful information from text even if it's not valid JSON"""
+    result = {
+        "name": extract_project_name(project_description),
+        "description": project_description[:500] + "..." if len(project_description) > 500 else project_description,
+        "experience_level": determine_experience_level(text + " " + project_description),
+        "project_type": determine_project_type(text + " " + project_description),
+        "suggested_technologies": find_technologies_in_text(text + " " + project_description, tech_names),
+        "reasoning": "Information extracted from text analysis.",
+        "recommendations": "Please review and adjust the suggestions according to your specific needs."
+    }
+    return result
+
+def extract_project_name(description):
+    """Extrae un nombre sugerido del proyecto desde la descripción"""
+    import re
+    # Buscar patrones como "Proyecto:", "Plataforma:", "## 🏠 Proyecto:", etc.
+    patterns = [
+        r'(?:##\s*)?(?:🏠|📱|💻)?\s*(?:Proyecto|Plataforma|Sistema|Aplicación)[:\s]+([^\n\.]+)',
+        r'(?:##\s*)?([^\n\.]{3,60})\s*(?:-|:|\n)',
+        r'^([A-ZÁÉÍÓÚÑ][^\n\.]{2,50})',
+    ]
+    for pattern in patterns:
+        matches = re.finditer(pattern, description, re.IGNORECASE | re.MULTILINE)
+        for match in matches:
+            name = match.group(1).strip()
+            # Limpiar emojis y caracteres especiales al inicio
+            name = re.sub(r'^[🏠📱💻⚙️💰🧱🎯\s]+', '', name)
+            name = name.strip()
+            if len(name) > 3 and len(name) < 100 and not name.startswith('#'):
+                return name
+    # Si no encuentra, usar primeras palabras relevantes
+    lines = description.split('\n')
+    for line in lines[:10]:  # Revisar primeras 10 líneas
+        line = line.strip()
+        if line and len(line) > 5 and len(line) < 100:
+            # Si la línea parece un título
+            if not line.startswith('#') and not line.startswith('-') and ':' not in line[:20]:
+                words = line.split()[:8]
+                if len(words) >= 2:
+                    return " ".join(words)
+    # Último recurso: primeras palabras
+    words = description.split()[:5]
+    return " ".join(words) if words else "Proyecto Nuevo"
+
+def determine_experience_level(text):
+    """Determina el nivel de experiencia basado en palabras clave"""
+    text_lower = text.lower()
+    advanced_keywords = ["avanzado", "complejo", "arquitectura", "microservicios", "scalable", "enterprise"]
+    beginner_keywords = ["simple", "básico", "principiante", "fácil", "inicio"]
+    
+    if any(kw in text_lower for kw in advanced_keywords):
+        return "Advanced"
+    elif any(kw in text_lower for kw in beginner_keywords):
+        return "Beginner"
+    else:
+        return "Intermediate"
+
+def determine_project_type(text):
+    """Determina el tipo de proyecto basado en palabras clave"""
+    text_lower = text.lower()
+    if any(kw in text_lower for kw in ["móvil", "mobile", "app movil", "android", "ios"]):
+        return "Mobile"
+    elif any(kw in text_lower for kw in ["api", "rest", "service", "backend"]):
+        return "API"
+    elif any(kw in text_lower for kw in ["data", "análisis", "machine learning", "ai"]):
+        return "Data Science"
+    elif any(kw in text_lower for kw in ["devops", "deploy", "infraestructura", "ci/cd"]):
+        return "DevOps"
+    elif any(kw in text_lower for kw in ["desktop", "escritorio", "aplicación de escritorio"]):
+        return "Desktop"
+    else:
+        return "Web"
+
+def find_technologies_in_text(text, available_techs):
+    """Busca tecnologías mencionadas en el texto"""
+    found_techs = []
+    text_lower = text.lower()
+    
+    # Obtener todas las tecnologías de la base de datos
+    technologies = Technology.query.order_by(Technology.name).all()
+    tech_dict = {tech.name.lower(): tech for tech in technologies}
+    
+    # Buscar cada tecnología disponible en el texto
+    for tech_name in available_techs:
+        tech_lower = str(tech_name).lower()
+        # Buscar la tecnología exacta o como palabra completa
+        import re
+        pattern = r'\b' + re.escape(tech_lower) + r'\b'
+        if re.search(pattern, text_lower):
+            # Buscar el objeto Technology completo
+            if tech_lower in tech_dict:
+                found_techs.append(tech_dict[tech_lower].to_dict())
+            else:
+                # Buscar parcialmente
+                for tech_obj in technologies:
+                    if tech_lower in tech_obj.name.lower() or tech_obj.name.lower() in tech_lower:
+                        found_techs.append(tech_obj.to_dict())
+                        break
+    
+    return found_techs
+
+def create_fallback_response(project_description, tech_names):
+    """Creates a fallback response when the AI doesn't respond correctly"""
+    response = {
+        "name": extract_project_name(project_description),
+        "description": project_description[:500] + "..." if len(project_description) > 500 else project_description,
+        "experience_level": determine_experience_level(project_description),
+        "project_type": determine_project_type(project_description),
+        "suggested_technologies": find_technologies_in_text(project_description, tech_names),
+        "reasoning": "An automatic response was generated based on the analysis of the provided text.",
+        "recommendations": generate_default_recommendations({
+            "project_type": determine_project_type(project_description),
+            "experience_level": determine_experience_level(project_description)
+        }, project_description),
+        "follow_up_questions": [
+            "What specific features or functionalities are most important for your project?",
+            "Do you have any technical constraints or preferences?",
+            "What is your target audience or user base?"
+        ],
+        "needs_more_info": True
+    }
+    return response
+
+def generate_default_recommendations(parsed, project_description):
+    """Generates default recommendations when AI doesn't provide them"""
+    project_type = parsed.get("project_type", "Web")
+    experience_level = parsed.get("experience_level", "Intermediate")
+    
+    recommendations = f"For a {project_type} project at {experience_level} level, here are some recommendations:\n\n"
+    
+    if project_type == "Web":
+        recommendations += "1. Consider using a modern frontend framework for better user experience and maintainability.\n"
+        recommendations += "2. Implement responsive design to ensure your application works well on all devices.\n"
+        recommendations += "3. Set up proper authentication and authorization mechanisms for user security.\n"
+        recommendations += "4. Use a RESTful API architecture for better scalability and separation of concerns.\n"
+        recommendations += "5. Implement proper error handling and logging for easier debugging and monitoring.\n"
+    elif project_type == "Mobile":
+        recommendations += "1. Choose between native, hybrid, or cross-platform development based on your needs.\n"
+        recommendations += "2. Implement offline functionality for better user experience.\n"
+        recommendations += "3. Consider push notifications for user engagement.\n"
+        recommendations += "4. Optimize for different screen sizes and device capabilities.\n"
+    else:
+        recommendations += "1. Plan your architecture carefully to ensure scalability.\n"
+        recommendations += "2. Implement proper error handling and logging.\n"
+        recommendations += "3. Consider security best practices from the start.\n"
+        recommendations += "4. Set up a proper development workflow with version control and testing.\n"
+    
+    recommendations += "\nIt's recommended to start with a minimum viable product (MVP) and iterate based on user feedback."
+    
+    return recommendations
+
+@app.route('/ai-assistant', methods=['GET', 'POST'])
+def ai_assistant():
+    """AI Assistant page for creating projects"""
+    technologies = Technology.query.order_by(Technology.name).all()
+    return render_template('ai_assistant.html', technologies=technologies)
+
+@app.route('/api/ai/analyze-project', methods=['POST'])
+def api_analyze_project():
+    """API endpoint para analizar proyecto con IA"""
+    try:
+        data = request.get_json()
+        project_description = data.get('description', '').strip()
+        project_goals = data.get('goals', '').strip()
+        conversation_history = data.get('conversation_history', [])  # Historial de conversación
+        
+        if not project_description:
+            return jsonify({
+                'success': False,
+                'error': 'La descripción del proyecto es requerida'
+            }), 400
+        
+        # Analizar con IA (con historial de conversación)
+        analysis = analyze_project_with_ai(project_description, project_goals, conversation_history)
+        
+        return jsonify({
+            'success': True,
+            'data': analysis
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error al analizar proyecto: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
     print("🚀 Starting DevMatch AI Flask Server...")
     print("📱 Access the web interface at: http://localhost:3000")
@@ -592,6 +1052,7 @@ if __name__ == '__main__':
     print("   🗂️  Projects: http://localhost:3000/projects")
     print("   👥 Developers: http://localhost:3000/developers")
     print("   🔍 Find Match: http://localhost:3000/matching")
+    print("   🤖 AI Assistant: http://localhost:3000/ai-assistant")
     print("   📊 API: http://localhost:3000/api/results")
     print("\n✨ Features:")
     print("   - AI-powered matching with DeepSeek")
