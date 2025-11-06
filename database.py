@@ -2,7 +2,7 @@
 # DevMatch AI - Database Initialization and Data Migration
 # ============================================================
 
-from models import db, Project, Developer, Technology, Experience, MatchResult
+from models import db, Project, Developer, Technology, Experience, MatchResult, AuditHistory
 from initial_data import projects as old_projects, developers as old_developers
 from datetime import datetime
 import os

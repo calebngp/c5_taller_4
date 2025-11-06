@@ -5,6 +5,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, Text, Table, Column, ForeignKey, DateTime, event
+from sqlalchemy import inspect as sa_inspect
 from typing import List
 from datetime import datetime
 import json
@@ -194,6 +195,34 @@ class MatchResult(db.Model):
             'created_at': self.created_at
         }
 
+class AuditHistory(db.Model):
+    """Modelo para almacenar el historial de cambios en los registros"""
+    __tablename__ = 'audit_history'
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'Developer' o 'Project'
+    entity_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    field_name: Mapped[str] = mapped_column(String(100), nullable=False)  # Nombre del campo modificado
+    old_value: Mapped[str] = mapped_column(Text, nullable=True)  # Valor anterior
+    new_value: Mapped[str] = mapped_column(Text, nullable=True)  # Valor nuevo
+    usuario: Mapped[str] = mapped_column(String(100), nullable=False)  # Usuario que hizo el cambio
+    fecha_modificacion: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+    
+    def __repr__(self):
+        return f'<AuditHistory {self.entity_type}#{self.entity_id}.{self.field_name}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'entity_type': self.entity_type,
+            'entity_id': self.entity_id,
+            'field_name': self.field_name,
+            'old_value': self.old_value,
+            'new_value': self.new_value,
+            'usuario': self.usuario,
+            'fecha_modificacion': self.fecha_modificacion.isoformat() if self.fecha_modificacion else None
+        }
+
 
 # ============================================================
 # Eventos de SQLAlchemy para Auditoría Automática
@@ -215,6 +244,44 @@ def set_developer_audit_on_insert(mapper, connection, target):
 @event.listens_for(Developer, 'before_update')
 def set_developer_audit_on_update(mapper, connection, target):
     """Evento que se ejecuta antes de actualizar un Developer"""
+    inspector = sa_inspect(target)
+    
+    # Campos a excluir de la auditoría
+    excluded_fields = ['id', 'usuario_creacion', 'usuario_modificacion', 
+                      'fecha_creacion', 'fecha_modificacion', 'skills', 'experiences']
+    
+    # Obtener valores anteriores desde la base de datos
+    if inspector.has_identity:
+        try:
+            # Obtener el registro original desde la base de datos
+            original = db.session.query(Developer).filter_by(id=target.id).first()
+            if original:
+                for attr_key in inspector.mapper.attrs.keys():
+                    if attr_key not in excluded_fields:
+                        old_value = getattr(original, attr_key, None)
+                        new_value = getattr(target, attr_key, None)
+                        
+                        # Comparar valores (convertir a string para comparación segura)
+                        old_str = str(old_value) if old_value is not None else ''
+                        new_str = str(new_value) if new_value is not None else ''
+                        
+                        if old_str != new_str:
+                            # Registrar el cambio en AuditHistory
+                            audit_record = AuditHistory(
+                                entity_type='Developer',
+                                entity_id=target.id,
+                                field_name=attr_key,
+                                old_value=old_str if old_str else None,
+                                new_value=new_str if new_str else None,
+                                usuario=get_current_user(),
+                                fecha_modificacion=datetime.now()
+                            )
+                            db.session.add(audit_record)
+        except Exception as e:
+            # Si hay error, continuar sin historial
+            pass
+    
+    # Actualizar campos de auditoría
     target.fecha_modificacion = datetime.now()
     target.usuario_modificacion = get_current_user()
 
@@ -230,5 +297,43 @@ def set_project_audit_on_insert(mapper, connection, target):
 @event.listens_for(Project, 'before_update')
 def set_project_audit_on_update(mapper, connection, target):
     """Evento que se ejecuta antes de actualizar un Project"""
+    inspector = sa_inspect(target)
+    
+    # Campos a excluir de la auditoría
+    excluded_fields = ['id', 'usuario_creacion', 'usuario_modificacion', 
+                      'fecha_creacion', 'fecha_modificacion', 'required_technologies']
+    
+    # Obtener valores anteriores desde la base de datos
+    if inspector.has_identity:
+        try:
+            # Obtener el registro original desde la base de datos
+            original = db.session.query(Project).filter_by(id=target.id).first()
+            if original:
+                for attr_key in inspector.mapper.attrs.keys():
+                    if attr_key not in excluded_fields:
+                        old_value = getattr(original, attr_key, None)
+                        new_value = getattr(target, attr_key, None)
+                        
+                        # Comparar valores (convertir a string para comparación segura)
+                        old_str = str(old_value) if old_value is not None else ''
+                        new_str = str(new_value) if new_value is not None else ''
+                        
+                        if old_str != new_str:
+                            # Registrar el cambio en AuditHistory
+                            audit_record = AuditHistory(
+                                entity_type='Project',
+                                entity_id=target.id,
+                                field_name=attr_key,
+                                old_value=old_str if old_str else None,
+                                new_value=new_str if new_str else None,
+                                usuario=get_current_user(),
+                                fecha_modificacion=datetime.now()
+                            )
+                            db.session.add(audit_record)
+        except Exception as e:
+            # Si hay error, continuar sin historial
+            pass
+    
+    # Actualizar campos de auditoría
     target.fecha_modificacion = datetime.now()
     target.usuario_modificacion = get_current_user()

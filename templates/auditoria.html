@@ -1,0 +1,531 @@
+{% extends "base.html" %}
+
+{% block title %}Auditoría - DevMatch AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .audit-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .audit-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+    
+    .audit-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px 12px 0 0;
+        margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .badge-entity {
+        font-size: 0.85rem;
+        padding: 0.35rem 0.65rem;
+    }
+    
+    .table-audit {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .table-audit thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .table-audit tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .filter-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .timeline-item {
+        border-left: 3px solid #667eea;
+        padding-left: 1rem;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -8px;
+        top: 0.5rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="audit-header">
+            <h2><i class="fas fa-clipboard-list"></i> Sistema de Auditoría</h2>
+            <p class="mb-0">Seguimiento de creación y modificación de registros</p>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas Generales -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_developers }}</div>
+            <div>Developers Registrados</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_projects }}</div>
+            <div>Proyectos Registrados</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ usuarios_creacion|length }}</div>
+            <div>Usuarios Activos</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_developers + total_projects }}</div>
+            <div>Total Registros</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros y Búsqueda -->
+<div class="filter-section">
+    <div class="row">
+        <div class="col-md-6">
+            <h5><i class="fas fa-filter"></i> Filtros</h5>
+            <div class="btn-group" role="group" aria-label="Filtros">
+                <button type="button" class="btn btn-outline-primary active" onclick="showSection('developers')">
+                    <i class="fas fa-users"></i> Developers
+                </button>
+                <button type="button" class="btn btn-outline-primary" onclick="showSection('projects')">
+                    <i class="fas fa-project-diagram"></i> Projects
+                </button>
+                <button type="button" class="btn btn-outline-primary" onclick="showSection('stats')">
+                    <i class="fas fa-chart-bar"></i> Estadísticas
+                </button>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h5><i class="fas fa-search"></i> Búsqueda</h5>
+            <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre..." onkeyup="filterTable()">
+        </div>
+    </div>
+</div>
+
+<!-- Sección de Developers -->
+<div id="developers-section" class="audit-section">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="audit-card">
+                <h4><i class="fas fa-users text-primary"></i> Auditoría de Developers</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover table-audit">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Usuario Creación</th>
+                                <th>Fecha Creación</th>
+                                <th>Usuario Modificación</th>
+                                <th>Fecha Modificación</th>
+                            </tr>
+                        </thead>
+                        <tbody id="developers-table">
+                            {% for dev in developers %}
+                            <tr>
+                                <td>{{ dev.id }}</td>
+                                <td>
+                                    <strong>{{ dev.name }}</strong>
+                                    <a href="{{ url_for('developer_detail', developer_id=dev.id) }}" class="btn btn-sm btn-outline-primary ms-2">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if dev.historial_cambios %}
+                                    <button class="btn btn-sm btn-outline-info ms-1" type="button" data-bs-toggle="collapse" data-bs-target="#changes-dev-{{ dev.id }}" aria-expanded="false">
+                                        <i class="fas fa-history"></i> Ver Cambios
+                                    </button>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-success badge-entity">{{ dev.usuario_creacion }}</span>
+                                </td>
+                                <td>
+                                    {% if dev.fecha_creacion %}
+                                        {{ dev.fecha_creacion.strftime('%d/%m/%Y %H:%M:%S') }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if dev.usuario_modificacion != 'N/A' %}
+                                        <span class="badge bg-warning badge-entity">{{ dev.usuario_modificacion }}</span>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if dev.fecha_modificacion %}
+                                        {{ dev.fecha_modificacion.strftime('%d/%m/%Y %H:%M:%S') }}
+                                    {% else %}
+                                        <span class="text-muted">Nunca modificado</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if dev.historial_cambios %}
+                            <tr>
+                                <td colspan="6" class="p-0">
+                                    <div class="collapse" id="changes-dev-{{ dev.id }}">
+                                        <div class="card card-body bg-light m-2">
+                                            <h6><i class="fas fa-history text-info"></i> Historial de Cambios</h6>
+                                            {% for cambio in dev.historial_cambios %}
+                                            <div class="mb-3 p-3 border rounded">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <strong>
+                                                        <i class="fas fa-calendar-alt"></i> 
+                                                        {{ cambio.fecha.strftime('%d/%m/%Y %H:%M:%S') }}
+                                                    </strong>
+                                                    <span class="badge bg-secondary">{{ cambio.usuario }}</span>
+                                                </div>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-bordered">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Campo</th>
+                                                                <th>Valor Anterior</th>
+                                                                <th>Valor Nuevo</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for campo in cambio.campos %}
+                                                            <tr>
+                                                                <td><strong>{{ campo.field_name }}</strong></td>
+                                                                <td>
+                                                                    <span class="badge bg-danger">{{ campo.old_value or 'N/A' }}</span>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge bg-success">{{ campo.new_value or 'N/A' }}</span>
+                                                                </td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sección de Projects -->
+<div id="projects-section" class="audit-section" style="display: none;">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="audit-card">
+                <h4><i class="fas fa-project-diagram text-danger"></i> Auditoría de Projects</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover table-audit">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Usuario Creación</th>
+                                <th>Fecha Creación</th>
+                                <th>Usuario Modificación</th>
+                                <th>Fecha Modificación</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projects-table">
+                            {% for proj in projects %}
+                            <tr>
+                                <td>{{ proj.id }}</td>
+                                <td>
+                                    <strong>{{ proj.name }}</strong>
+                                    <a href="{{ url_for('project_detail', project_id=proj.id) }}" class="btn btn-sm btn-outline-primary ms-2">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if proj.historial_cambios %}
+                                    <button class="btn btn-sm btn-outline-info ms-1" type="button" data-bs-toggle="collapse" data-bs-target="#changes-proj-{{ proj.id }}" aria-expanded="false">
+                                        <i class="fas fa-history"></i> Ver Cambios
+                                    </button>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-success badge-entity">{{ proj.usuario_creacion }}</span>
+                                </td>
+                                <td>
+                                    {% if proj.fecha_creacion %}
+                                        {{ proj.fecha_creacion.strftime('%d/%m/%Y %H:%M:%S') }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if proj.usuario_modificacion != 'N/A' %}
+                                        <span class="badge bg-warning badge-entity">{{ proj.usuario_modificacion }}</span>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if proj.fecha_modificacion %}
+                                        {{ proj.fecha_modificacion.strftime('%d/%m/%Y %H:%M:%S') }}
+                                    {% else %}
+                                        <span class="text-muted">Nunca modificado</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if proj.historial_cambios %}
+                            <tr>
+                                <td colspan="6" class="p-0">
+                                    <div class="collapse" id="changes-proj-{{ proj.id }}">
+                                        <div class="card card-body bg-light m-2">
+                                            <h6><i class="fas fa-history text-info"></i> Historial de Cambios</h6>
+                                            {% for cambio in proj.historial_cambios %}
+                                            <div class="mb-3 p-3 border rounded">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <strong>
+                                                        <i class="fas fa-calendar-alt"></i> 
+                                                        {{ cambio.fecha.strftime('%d/%m/%Y %H:%M:%S') }}
+                                                    </strong>
+                                                    <span class="badge bg-secondary">{{ cambio.usuario }}</span>
+                                                </div>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-bordered">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Campo</th>
+                                                                <th>Valor Anterior</th>
+                                                                <th>Valor Nuevo</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for campo in cambio.campos %}
+                                                            <tr>
+                                                                <td><strong>{{ campo.field_name }}</strong></td>
+                                                                <td>
+                                                                    <span class="badge bg-danger">{{ campo.old_value or 'N/A' }}</span>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge bg-success">{{ campo.new_value or 'N/A' }}</span>
+                                                                </td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sección de Estadísticas -->
+<div id="stats-section" class="audit-section" style="display: none;">
+    <div class="row">
+        <!-- Usuarios más activos en creación -->
+        <div class="col-md-6 mb-4">
+            <div class="audit-card">
+                <h5><i class="fas fa-user-plus text-success"></i> Usuarios Más Activos (Creación)</h5>
+                <div class="timeline-item">
+                    {% if usuarios_creacion %}
+                        {% for usuario, count in usuarios_creacion %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <strong>{{ usuario }}</strong>
+                                <br>
+                                <small class="text-muted">{{ count }} registro(s) creado(s)</small>
+                            </div>
+                            <span class="badge bg-success fs-6">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No hay datos disponibles</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Usuarios más activos en modificación -->
+        <div class="col-md-6 mb-4">
+            <div class="audit-card">
+                <h5><i class="fas fa-user-edit text-warning"></i> Usuarios Más Activos (Modificación)</h5>
+                <div class="timeline-item">
+                    {% if usuarios_modificacion %}
+                        {% for usuario, count in usuarios_modificacion %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <strong>{{ usuario }}</strong>
+                                <br>
+                                <small class="text-muted">{{ count }} registro(s) modificado(s)</small>
+                            </div>
+                            <span class="badge bg-warning fs-6">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No hay datos disponibles</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Últimos creados -->
+        <div class="col-md-6 mb-4">
+            <div class="audit-card">
+                <h5><i class="fas fa-clock text-info"></i> Últimos Registros Creados</h5>
+                <div>
+                    {% if ultimos_creados %}
+                        {% for item in ultimos_creados %}
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded">
+                            <div>
+                                <span class="badge {% if item.tipo == 'Developer' %}bg-primary{% else %}bg-danger{% endif %} badge-entity">
+                                    {{ item.tipo }}
+                                </span>
+                                <strong class="ms-2">{{ item.nombre }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> {{ item.usuario }}
+                                    <br>
+                                    <i class="fas fa-calendar"></i> {{ item.fecha.strftime('%d/%m/%Y %H:%M:%S') }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No hay datos disponibles</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Últimos modificados -->
+        <div class="col-md-6 mb-4">
+            <div class="audit-card">
+                <h5><i class="fas fa-edit text-warning"></i> Últimos Registros Modificados</h5>
+                <div>
+                    {% if ultimos_modificados %}
+                        {% for item in ultimos_modificados %}
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded">
+                            <div>
+                                <span class="badge {% if item.tipo == 'Developer' %}bg-primary{% else %}bg-danger{% endif %} badge-entity">
+                                    {{ item.tipo }}
+                                </span>
+                                <strong class="ms-2">{{ item.nombre }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> {{ item.usuario }}
+                                    <br>
+                                    <i class="fas fa-calendar"></i> {{ item.fecha.strftime('%d/%m/%Y %H:%M:%S') }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No hay datos disponibles</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showSection(section) {
+    // Ocultar todas las secciones
+    document.querySelectorAll('.audit-section').forEach(sec => {
+        sec.style.display = 'none';
+    });
+    
+    // Mostrar la sección seleccionada
+    document.getElementById(section + '-section').style.display = 'block';
+    
+    // Actualizar botones activos
+    document.querySelectorAll('.btn-group button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+}
+
+function filterTable() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toLowerCase();
+    const sections = ['developers', 'projects'];
+    
+    sections.forEach(section => {
+        const table = document.getElementById(section + '-table');
+        if (table) {
+            const rows = table.getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                const text = rows[i].textContent || rows[i].innerText;
+                if (text.toLowerCase().indexOf(filter) > -1) {
+                    rows[i].style.display = '';
+                } else {
+                    rows[i].style.display = 'none';
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}
+

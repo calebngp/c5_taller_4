@@ -39,6 +39,10 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 # Initialize database
 db.init_app(app)
 
+# Create all tables (including audit_history) if they don't exist
+with app.app_context():
+    db.create_all()
+
 # Register API Blueprint (CRUD REST endpoints)
 from api_routes import api_bp
 app.register_blueprint(api_bp)
@@ -1067,6 +1071,177 @@ def api_analyze_project():
             'error': f'Error al analizar proyecto: {str(e)}'
         }), 500
 
+@app.route('/auditoria')
+def auditoria():
+    """Página de auditoría que muestra información de creación y modificación"""
+    from models import Developer, Project, AuditHistory
+    
+    # Asegurar que la tabla audit_history existe
+    try:
+        db.create_all()
+    except Exception as e:
+        pass  # La tabla ya existe o hay otro error
+    
+    # Obtener todos los developers con información de auditoría
+    developers = Developer.query.order_by(Developer.fecha_creacion.desc()).all()
+    developers_data = []
+    for dev in developers:
+        # Obtener historial de cambios para este developer
+        try:
+            changes = AuditHistory.query.filter_by(
+                entity_type='Developer',
+                entity_id=dev.id
+            ).order_by(AuditHistory.fecha_modificacion.desc()).all()
+        except Exception:
+            # Si la tabla no existe aún, usar lista vacía
+            changes = []
+        
+        # Agrupar cambios por fecha de modificación
+        changes_by_date = {}
+        for change in changes:
+            date_key = change.fecha_modificacion.strftime('%Y-%m-%d %H:%M:%S') if change.fecha_modificacion else 'N/A'
+            if date_key not in changes_by_date:
+                changes_by_date[date_key] = {
+                    'fecha': change.fecha_modificacion,
+                    'usuario': change.usuario,
+                    'campos': []
+                }
+            changes_by_date[date_key]['campos'].append({
+                'field_name': change.field_name,
+                'old_value': change.old_value,
+                'new_value': change.new_value
+            })
+        
+        developers_data.append({
+            'id': dev.id,
+            'name': dev.name,
+            'usuario_creacion': dev.usuario_creacion or 'N/A',
+            'fecha_creacion': dev.fecha_creacion,
+            'usuario_modificacion': dev.usuario_modificacion or 'N/A',
+            'fecha_modificacion': dev.fecha_modificacion,
+            'historial_cambios': list(changes_by_date.values())
+        })
+    
+    # Obtener todos los projects con información de auditoría
+    projects = Project.query.order_by(Project.fecha_creacion.desc()).all()
+    projects_data = []
+    for proj in projects:
+        # Obtener historial de cambios para este project
+        try:
+            changes = AuditHistory.query.filter_by(
+                entity_type='Project',
+                entity_id=proj.id
+            ).order_by(AuditHistory.fecha_modificacion.desc()).all()
+        except Exception:
+            # Si la tabla no existe aún, usar lista vacía
+            changes = []
+        
+        # Agrupar cambios por fecha de modificación
+        changes_by_date = {}
+        for change in changes:
+            date_key = change.fecha_modificacion.strftime('%Y-%m-%d %H:%M:%S') if change.fecha_modificacion else 'N/A'
+            if date_key not in changes_by_date:
+                changes_by_date[date_key] = {
+                    'fecha': change.fecha_modificacion,
+                    'usuario': change.usuario,
+                    'campos': []
+                }
+            changes_by_date[date_key]['campos'].append({
+                'field_name': change.field_name,
+                'old_value': change.old_value,
+                'new_value': change.new_value
+            })
+        
+        projects_data.append({
+            'id': proj.id,
+            'name': proj.name,
+            'usuario_creacion': proj.usuario_creacion or 'N/A',
+            'fecha_creacion': proj.fecha_creacion,
+            'usuario_modificacion': proj.usuario_modificacion or 'N/A',
+            'fecha_modificacion': proj.fecha_modificacion,
+            'historial_cambios': list(changes_by_date.values())
+        })
+    
+    # Calcular estadísticas
+    total_developers = len(developers_data)
+    total_projects = len(projects_data)
+    
+    # Usuarios más activos (por creación)
+    usuarios_creacion = {}
+    usuarios_modificacion = {}
+    
+    for dev in developers_data:
+        usuario = dev['usuario_creacion']
+        if usuario != 'N/A':
+            usuarios_creacion[usuario] = usuarios_creacion.get(usuario, 0) + 1
+        usuario_mod = dev['usuario_modificacion']
+        if usuario_mod != 'N/A':
+            usuarios_modificacion[usuario_mod] = usuarios_modificacion.get(usuario_mod, 0) + 1
+    
+    for proj in projects_data:
+        usuario = proj['usuario_creacion']
+        if usuario != 'N/A':
+            usuarios_creacion[usuario] = usuarios_creacion.get(usuario, 0) + 1
+        usuario_mod = proj['usuario_modificacion']
+        if usuario_mod != 'N/A':
+            usuarios_modificacion[usuario_mod] = usuarios_modificacion.get(usuario_mod, 0) + 1
+    
+    # Ordenar usuarios por actividad
+    usuarios_creacion_sorted = sorted(usuarios_creacion.items(), key=lambda x: x[1], reverse=True)[:5]
+    usuarios_modificacion_sorted = sorted(usuarios_modificacion.items(), key=lambda x: x[1], reverse=True)[:5]
+    
+    # Últimos creados (top 5)
+    ultimos_creados = []
+    for dev in developers_data[:5]:
+        if dev['fecha_creacion']:
+            ultimos_creados.append({
+                'tipo': 'Developer',
+                'nombre': dev['name'],
+                'fecha': dev['fecha_creacion'],
+                'usuario': dev['usuario_creacion']
+            })
+    for proj in projects_data[:5]:
+        if proj['fecha_creacion']:
+            ultimos_creados.append({
+                'tipo': 'Project',
+                'nombre': proj['name'],
+                'fecha': proj['fecha_creacion'],
+                'usuario': proj['usuario_creacion']
+            })
+    ultimos_creados.sort(key=lambda x: x['fecha'], reverse=True)
+    ultimos_creados = ultimos_creados[:5]
+    
+    # Últimos modificados (top 5)
+    ultimos_modificados = []
+    for dev in developers_data:
+        if dev['fecha_modificacion']:
+            ultimos_modificados.append({
+                'tipo': 'Developer',
+                'nombre': dev['name'],
+                'fecha': dev['fecha_modificacion'],
+                'usuario': dev['usuario_modificacion']
+            })
+    for proj in projects_data:
+        if proj['fecha_modificacion']:
+            ultimos_modificados.append({
+                'tipo': 'Project',
+                'nombre': proj['name'],
+                'fecha': proj['fecha_modificacion'],
+                'usuario': proj['usuario_modificacion']
+            })
+    ultimos_modificados.sort(key=lambda x: x['fecha'], reverse=True)
+    ultimos_modificados = ultimos_modificados[:5]
+    
+    return render_template('auditoria.html',
+                         developers=developers_data,
+                         projects=projects_data,
+                         total_developers=total_developers,
+                         total_projects=total_projects,
+                         usuarios_creacion=usuarios_creacion_sorted,
+                         usuarios_modificacion=usuarios_modificacion_sorted,
+                         ultimos_creados=ultimos_creados,
+                         ultimos_modificados=ultimos_modificados)
+
 if __name__ == '__main__':
     print("🚀 Starting DevMatch AI Flask Server...")
     print("📱 Access the web interface at: http://localhost:3000")
@@ -1076,6 +1251,8 @@ if __name__ == '__main__':
     print("   👥 Developers: http://localhost:3000/developers")
     print("   🔍 Find Match: http://localhost:3000/matching")
     print("   🤖 AI Assistant: http://localhost:3000/ai-assistant")
+    print("   📊 Matches: http://localhost:3000/projects/matches")
+    print("   📋 Auditoría: http://localhost:3000/auditoria")
     print("   📊 API: http://localhost:3000/api/results")
     print("\n✨ Features:")
     print("   - AI-powered matching with DeepSeek")

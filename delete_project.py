@@ -110,7 +110,3 @@ if __name__ == '__main__':
         print("  python delete_project.py --list                 - Lista todos los proyectos")
         print("\nEjemplo:")
         print("  python delete_project.py 'Taller IV'")
-
-
-
-
